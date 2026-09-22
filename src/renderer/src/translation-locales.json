@@ -1,0 +1,482 @@
+{
+  "en": {
+    "translation": {
+      "title": "Translate",
+      "close": "Close",
+      "autoDetect": "Auto-detect language",
+      "target": "Target language",
+      "chinese": "Simplified Chinese",
+      "english": "English",
+      "source": "Original text",
+      "placeholder": "Enter or paste text to translate…",
+      "result": "Translation",
+      "copy": "Copy",
+      "copied": "Copied",
+      "working": "Translating…",
+      "resultPlaceholder": "Your translation will appear here.",
+      "configure": "Configure AI",
+      "cancel": "Cancel",
+      "translate": "Translate",
+      "retry": "Translate again",
+      "errors": {
+        "no-selection": "Select text in another app, then use the shortcut. If the app does not expose its selection, use screenshot translation or paste here.",
+        "no-text": "No text was found. Enter text or try another screenshot.",
+        "not-configured": "Configure a model in AI settings to translate this text.",
+        "capture-failed": "The screenshot could not be read. Try again and check screen recording permission.",
+        "request-failed": "Translation failed. You can retry without losing the original text.",
+        "empty-result": "The model returned no translation. Try again.",
+        "bridge": "Unable to connect to the translation window. Close it and reopen."
+      },
+      "sources": {
+        "manual": "Manual input",
+        "selection": "Selected text",
+        "screenshot": "Screenshot"
+      },
+      "phases": {
+        "idle": "Ready · ⌘ Enter to translate",
+        "capturing": "Reading screenshot…",
+        "translating": "Translating…",
+        "done": "Done",
+        "cancelled": "Cancelled",
+        "error": "Needs attention"
+      },
+      "commands": {
+        "open": "Open Translation",
+        "selection": "Translate Selected Text",
+        "capture": "Translate Screenshot"
+      }
+    }
+  },
+  "zh-Hans": {
+    "translation": {
+      "title": "翻译",
+      "close": "关闭",
+      "autoDetect": "自动识别语言",
+      "target": "目标语言",
+      "chinese": "简体中文",
+      "english": "英文",
+      "source": "原文",
+      "placeholder": "输入或粘贴要翻译的文字…",
+      "result": "译文",
+      "copy": "复制",
+      "copied": "已复制",
+      "working": "正在翻译…",
+      "resultPlaceholder": "译文将在这里显示。",
+      "configure": "配置 AI",
+      "cancel": "取消",
+      "translate": "翻译",
+      "retry": "重新翻译",
+      "errors": {
+        "no-selection": "请先在其他应用中选中文字，再按快捷键。如果应用无法读取选区，请使用截图翻译或粘贴到这里。",
+        "no-text": "没有找到文字，请输入文字或重新截图。",
+        "not-configured": "请在 AI 设置中配置模型后翻译。",
+        "capture-failed": "无法读取截图，请重试并检查屏幕录制权限。",
+        "request-failed": "翻译失败，原文已保留，可以重试。",
+        "empty-result": "模型未返回译文，请重试。",
+        "bridge": "无法连接翻译窗口，请关闭后重新打开。"
+      },
+      "sources": {
+        "manual": "手动输入",
+        "selection": "选中文字",
+        "screenshot": "截图"
+      },
+      "phases": {
+        "idle": "就绪 · ⌘ 回车翻译",
+        "capturing": "正在识别截图…",
+        "translating": "正在翻译…",
+        "done": "已完成",
+        "cancelled": "已取消",
+        "error": "需要处理"
+      },
+      "commands": {
+        "open": "打开翻译",
+        "selection": "翻译选中文字",
+        "capture": "截图翻译"
+      }
+    }
+  },
+  "zh-Hant": {
+    "translation": {
+      "title": "翻譯",
+      "close": "關閉",
+      "autoDetect": "自動辨識語言",
+      "target": "目標語言",
+      "chinese": "簡體中文",
+      "english": "英文",
+      "source": "原文",
+      "placeholder": "輸入或貼上要翻譯的文字…",
+      "result": "譯文",
+      "copy": "複製",
+      "copied": "已複製",
+      "working": "正在翻譯…",
+      "resultPlaceholder": "譯文將在這裡顯示。",
+      "configure": "設定 AI",
+      "cancel": "取消",
+      "translate": "翻譯",
+      "retry": "重新翻譯",
+      "errors": {
+        "no-selection": "請先在其他應用程式中選取文字，再按快捷鍵。如果無法讀取選取範圍，請使用截圖翻譯或貼上到這裡。",
+        "no-text": "沒有找到文字，請輸入文字或重新截圖。",
+        "not-configured": "請在 AI 設定中設定模型後翻譯。",
+        "capture-failed": "無法讀取截圖，請重試並檢查螢幕錄製權限。",
+        "request-failed": "翻譯失敗，原文已保留，可以重試。",
+        "empty-result": "模型未傳回譯文，請重試。",
+        "bridge": "無法連線至翻譯視窗，請關閉後重新開啟。"
+      },
+      "sources": {
+        "manual": "手動輸入",
+        "selection": "選取文字",
+        "screenshot": "截圖"
+      },
+      "phases": {
+        "idle": "就緒 · ⌘ Enter 翻譯",
+        "capturing": "正在辨識截圖…",
+        "translating": "正在翻譯…",
+        "done": "已完成",
+        "cancelled": "已取消",
+        "error": "需要處理"
+      },
+      "commands": {
+        "open": "開啟翻譯",
+        "selection": "翻譯選取文字",
+        "capture": "截圖翻譯"
+      }
+    }
+  },
+  "ja": {
+    "translation": {
+      "title": "翻訳",
+      "close": "閉じる",
+      "autoDetect": "言語を自動検出",
+      "target": "翻訳先の言語",
+      "chinese": "中国語（簡体字）",
+      "english": "英語",
+      "source": "原文",
+      "placeholder": "翻訳するテキストを入力または貼り付け…",
+      "result": "翻訳結果",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "working": "翻訳中…",
+      "resultPlaceholder": "翻訳結果がここに表示されます。",
+      "configure": "AI を設定",
+      "cancel": "キャンセル",
+      "translate": "翻訳",
+      "retry": "再翻訳",
+      "errors": {
+        "no-selection": "他のアプリでテキストを選択してからショートカットを押してください。取得できない場合はスクリーンショット翻訳か貼り付けを使用してください。",
+        "no-text": "テキストが見つかりません。入力するか再度撮影してください。",
+        "not-configured": "AI 設定でモデルを設定してください。",
+        "capture-failed": "画像を読み取れません。画面収録の権限を確認してください。",
+        "request-failed": "翻訳に失敗しました。原文を保持したまま再試行できます。",
+        "empty-result": "翻訳結果が空でした。再試行してください。",
+        "bridge": "翻訳ウィンドウに接続できません。開き直してください。"
+      },
+      "sources": {
+        "manual": "手動入力",
+        "selection": "選択したテキスト",
+        "screenshot": "スクリーンショット"
+      },
+      "phases": {
+        "idle": "準備完了 · ⌘ Enter で翻訳",
+        "capturing": "画像を読み取り中…",
+        "translating": "翻訳中…",
+        "done": "完了",
+        "cancelled": "キャンセル済み",
+        "error": "確認が必要"
+      },
+      "commands": {
+        "open": "翻訳を開く",
+        "selection": "選択したテキストを翻訳",
+        "capture": "スクリーンショットを翻訳"
+      }
+    }
+  },
+  "ko": {
+    "translation": {
+      "title": "번역",
+      "close": "닫기",
+      "autoDetect": "언어 자동 감지",
+      "target": "대상 언어",
+      "chinese": "중국어 간체",
+      "english": "영어",
+      "source": "원문",
+      "placeholder": "번역할 텍스트를 입력하거나 붙여넣으세요…",
+      "result": "번역 결과",
+      "copy": "복사",
+      "copied": "복사됨",
+      "working": "번역 중…",
+      "resultPlaceholder": "번역 결과가 여기에 표시됩니다.",
+      "configure": "AI 설정",
+      "cancel": "취소",
+      "translate": "번역",
+      "retry": "다시 번역",
+      "errors": {
+        "no-selection": "다른 앱에서 텍스트를 선택한 후 단축키를 누르세요. 선택 영역을 읽을 수 없으면 스크린샷 번역이나 붙여넣기를 사용하세요.",
+        "no-text": "텍스트를 찾지 못했습니다. 입력하거나 다시 캡처하세요.",
+        "not-configured": "AI 설정에서 모델을 구성하세요.",
+        "capture-failed": "스크린샷을 읽을 수 없습니다. 화면 기록 권한을 확인하세요.",
+        "request-failed": "번역하지 못했습니다. 원문은 유지되며 다시 시도할 수 있습니다.",
+        "empty-result": "모델이 번역을 반환하지 않았습니다. 다시 시도하세요.",
+        "bridge": "번역 창에 연결할 수 없습니다. 닫은 후 다시 여세요."
+      },
+      "sources": {
+        "manual": "직접 입력",
+        "selection": "선택한 텍스트",
+        "screenshot": "스크린샷"
+      },
+      "phases": {
+        "idle": "준비 · ⌘ Enter로 번역",
+        "capturing": "스크린샷 인식 중…",
+        "translating": "번역 중…",
+        "done": "완료",
+        "cancelled": "취소됨",
+        "error": "확인 필요"
+      },
+      "commands": {
+        "open": "번역 열기",
+        "selection": "선택한 텍스트 번역",
+        "capture": "스크린샷 번역"
+      }
+    }
+  },
+  "fr": {
+    "translation": {
+      "title": "Traduire",
+      "close": "Fermer",
+      "autoDetect": "Détecter la langue",
+      "target": "Langue cible",
+      "chinese": "Chinois simplifié",
+      "english": "Anglais",
+      "source": "Texte original",
+      "placeholder": "Saisissez ou collez le texte à traduire…",
+      "result": "Traduction",
+      "copy": "Copier",
+      "copied": "Copié",
+      "working": "Traduction…",
+      "resultPlaceholder": "La traduction apparaîtra ici.",
+      "configure": "Configurer l’IA",
+      "cancel": "Annuler",
+      "translate": "Traduire",
+      "retry": "Retraduire",
+      "errors": {
+        "no-selection": "Sélectionnez du texte dans une autre application, puis utilisez le raccourci. Sinon, utilisez une capture ou collez le texte ici.",
+        "no-text": "Aucun texte trouvé. Saisissez du texte ou refaites la capture.",
+        "not-configured": "Configurez un modèle dans les réglages IA.",
+        "capture-failed": "Capture illisible. Vérifiez l’autorisation d’enregistrement de l’écran.",
+        "request-failed": "Échec de traduction. Le texte original est conservé.",
+        "empty-result": "Le modèle n’a renvoyé aucune traduction. Réessayez.",
+        "bridge": "Connexion à la fenêtre impossible. Fermez-la et rouvrez-la."
+      },
+      "sources": {
+        "manual": "Saisie manuelle",
+        "selection": "Texte sélectionné",
+        "screenshot": "Capture"
+      },
+      "phases": {
+        "idle": "Prêt · ⌘ Entrée pour traduire",
+        "capturing": "Lecture de la capture…",
+        "translating": "Traduction…",
+        "done": "Terminé",
+        "cancelled": "Annulé",
+        "error": "À vérifier"
+      },
+      "commands": {
+        "open": "Ouvrir la traduction",
+        "selection": "Traduire la sélection",
+        "capture": "Traduire une capture"
+      }
+    }
+  },
+  "de": {
+    "translation": {
+      "title": "Übersetzen",
+      "close": "Schließen",
+      "autoDetect": "Sprache erkennen",
+      "target": "Zielsprache",
+      "chinese": "Chinesisch (vereinfacht)",
+      "english": "Englisch",
+      "source": "Originaltext",
+      "placeholder": "Text zum Übersetzen eingeben oder einfügen…",
+      "result": "Übersetzung",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "working": "Wird übersetzt…",
+      "resultPlaceholder": "Die Übersetzung erscheint hier.",
+      "configure": "KI konfigurieren",
+      "cancel": "Abbrechen",
+      "translate": "Übersetzen",
+      "retry": "Erneut übersetzen",
+      "errors": {
+        "no-selection": "Text in einer anderen App auswählen und den Kurzbefehl nutzen. Andernfalls einen Screenshot verwenden oder den Text hier einfügen.",
+        "no-text": "Kein Text gefunden. Text eingeben oder neuen Screenshot erstellen.",
+        "not-configured": "Bitte ein Modell in den KI-Einstellungen konfigurieren.",
+        "capture-failed": "Screenshot nicht lesbar. Berechtigung zur Bildschirmaufnahme prüfen.",
+        "request-failed": "Übersetzung fehlgeschlagen. Der Originaltext bleibt erhalten.",
+        "empty-result": "Das Modell hat keine Übersetzung geliefert. Erneut versuchen.",
+        "bridge": "Verbindung zum Übersetzungsfenster fehlgeschlagen. Fenster erneut öffnen."
+      },
+      "sources": {
+        "manual": "Manuelle Eingabe",
+        "selection": "Ausgewählter Text",
+        "screenshot": "Screenshot"
+      },
+      "phases": {
+        "idle": "Bereit · ⌘ Enter zum Übersetzen",
+        "capturing": "Screenshot wird gelesen…",
+        "translating": "Wird übersetzt…",
+        "done": "Fertig",
+        "cancelled": "Abgebrochen",
+        "error": "Bitte prüfen"
+      },
+      "commands": {
+        "open": "Übersetzung öffnen",
+        "selection": "Ausgewählten Text übersetzen",
+        "capture": "Screenshot übersetzen"
+      }
+    }
+  },
+  "es": {
+    "translation": {
+      "title": "Traducir",
+      "close": "Cerrar",
+      "autoDetect": "Detectar idioma",
+      "target": "Idioma de destino",
+      "chinese": "Chino simplificado",
+      "english": "Inglés",
+      "source": "Texto original",
+      "placeholder": "Escribe o pega el texto para traducir…",
+      "result": "Traducción",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "working": "Traduciendo…",
+      "resultPlaceholder": "La traducción aparecerá aquí.",
+      "configure": "Configurar IA",
+      "cancel": "Cancelar",
+      "translate": "Traducir",
+      "retry": "Traducir de nuevo",
+      "errors": {
+        "no-selection": "Selecciona texto en otra aplicación y usa el atajo. Si no se puede leer, usa una captura o pega el texto aquí.",
+        "no-text": "No se encontró texto. Escríbelo o toma otra captura.",
+        "not-configured": "Configura un modelo en los ajustes de IA.",
+        "capture-failed": "No se pudo leer la captura. Revisa el permiso de grabación de pantalla.",
+        "request-failed": "La traducción falló. El texto original se conserva.",
+        "empty-result": "El modelo no devolvió una traducción. Reintenta.",
+        "bridge": "No se puede conectar a la ventana. Ciérrala y ábrela de nuevo."
+      },
+      "sources": {
+        "manual": "Entrada manual",
+        "selection": "Texto seleccionado",
+        "screenshot": "Captura"
+      },
+      "phases": {
+        "idle": "Listo · ⌘ Intro para traducir",
+        "capturing": "Leyendo captura…",
+        "translating": "Traduciendo…",
+        "done": "Completado",
+        "cancelled": "Cancelado",
+        "error": "Requiere atención"
+      },
+      "commands": {
+        "open": "Abrir traducción",
+        "selection": "Traducir selección",
+        "capture": "Traducir captura"
+      }
+    }
+  },
+  "ru": {
+    "translation": {
+      "title": "Перевод",
+      "close": "Закрыть",
+      "autoDetect": "Определить язык",
+      "target": "Язык перевода",
+      "chinese": "Китайский (упрощённый)",
+      "english": "Английский",
+      "source": "Исходный текст",
+      "placeholder": "Введите или вставьте текст для перевода…",
+      "result": "Перевод",
+      "copy": "Копировать",
+      "copied": "Скопировано",
+      "working": "Переводим…",
+      "resultPlaceholder": "Здесь появится перевод.",
+      "configure": "Настроить ИИ",
+      "cancel": "Отмена",
+      "translate": "Перевести",
+      "retry": "Перевести снова",
+      "errors": {
+        "no-selection": "Выделите текст в другом приложении и нажмите сочетание клавиш. Если текст недоступен, используйте перевод снимка или вставьте текст сюда.",
+        "no-text": "Текст не найден. Введите текст или сделайте другой снимок.",
+        "not-configured": "Настройте модель в настройках ИИ.",
+        "capture-failed": "Не удалось прочитать снимок. Проверьте разрешение на запись экрана.",
+        "request-failed": "Перевод не удался. Исходный текст сохранён.",
+        "empty-result": "Модель не вернула перевод. Повторите попытку.",
+        "bridge": "Нет связи с окном перевода. Закройте и откройте его снова."
+      },
+      "sources": {
+        "manual": "Ручной ввод",
+        "selection": "Выделенный текст",
+        "screenshot": "Снимок экрана"
+      },
+      "phases": {
+        "idle": "Готово · ⌘ Enter для перевода",
+        "capturing": "Чтение снимка…",
+        "translating": "Переводим…",
+        "done": "Завершено",
+        "cancelled": "Отменено",
+        "error": "Требуется внимание"
+      },
+      "commands": {
+        "open": "Открыть перевод",
+        "selection": "Перевести выделенный текст",
+        "capture": "Перевести снимок экрана"
+      }
+    }
+  },
+  "it": {
+    "translation": {
+      "title": "Traduci",
+      "close": "Chiudi",
+      "autoDetect": "Rileva lingua",
+      "target": "Lingua di destinazione",
+      "chinese": "Cinese semplificato",
+      "english": "Inglese",
+      "source": "Testo originale",
+      "placeholder": "Inserisci o incolla il testo da tradurre…",
+      "result": "Traduzione",
+      "copy": "Copia",
+      "copied": "Copiato",
+      "working": "Traduzione…",
+      "resultPlaceholder": "La traduzione apparirà qui.",
+      "configure": "Configura IA",
+      "cancel": "Annulla",
+      "translate": "Traduci",
+      "retry": "Traduci di nuovo",
+      "errors": {
+        "no-selection": "Seleziona il testo in un’altra app e usa la scorciatoia. Altrimenti usa uno screenshot o incolla il testo qui.",
+        "no-text": "Nessun testo trovato. Inserisci il testo o ripeti lo screenshot.",
+        "not-configured": "Configura un modello nelle impostazioni IA.",
+        "capture-failed": "Screenshot illeggibile. Controlla il permesso di registrazione schermo.",
+        "request-failed": "Traduzione non riuscita. Il testo originale è conservato.",
+        "empty-result": "Il modello non ha restituito una traduzione. Riprova.",
+        "bridge": "Impossibile collegarsi alla finestra. Chiudila e riaprila."
+      },
+      "sources": {
+        "manual": "Inserimento manuale",
+        "selection": "Testo selezionato",
+        "screenshot": "Screenshot"
+      },
+      "phases": {
+        "idle": "Pronto · ⌘ Invio per tradurre",
+        "capturing": "Lettura screenshot…",
+        "translating": "Traduzione…",
+        "done": "Completato",
+        "cancelled": "Annullato",
+        "error": "Da controllare"
+      },
+      "commands": {
+        "open": "Apri traduzione",
+        "selection": "Traduci testo selezionato",
+        "capture": "Traduci screenshot"
+      }
+    }
+  }
+}
