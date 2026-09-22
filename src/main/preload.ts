@@ -1145,6 +1145,31 @@ const electronAPI = {
     ipcRenderer.invoke('window-management-snapshot'),
 };
 
+exposeToRenderer('screenshotAPI', {
+  getCurrent: () => ipcRenderer.invoke('screenshot:current'),
+  copy: () => ipcRenderer.invoke('screenshot:copy'),
+  save: () => ipcRenderer.invoke('screenshot:save'),
+  pin: () => ipcRenderer.invoke('screenshot:pin'),
+  recognize: () => ipcRenderer.invoke('screenshot:recognize'),
+  translate: () => ipcRenderer.invoke('screenshot:translate'),
+  close: () => ipcRenderer.send('screenshot:close'),
+  zoom: (factor: number) => ipcRenderer.send('screenshot:zoom', factor),
+});
+
+exposeToRenderer('translationAPI', {
+  getState: () => ipcRenderer.invoke('translation:get-state'),
+  translate: (text: string, target: string) => ipcRenderer.invoke('translation:translate', text, target),
+  cancel: () => ipcRenderer.invoke('translation:cancel'),
+  close: () => ipcRenderer.invoke('translation:close'),
+  copy: () => ipcRenderer.invoke('translation:copy'),
+  openSettings: () => ipcRenderer.invoke('translation:open-settings'),
+  onState: (callback: (state: unknown) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, state: unknown) => callback(state);
+    ipcRenderer.on('translation:state', handler);
+    return () => ipcRenderer.removeListener('translation:state', handler);
+  },
+});
+
 exposeToRenderer('electron', electronAPI);
 
 // ─── Real Node require for extensions ───────────────────────────

@@ -1745,6 +1745,16 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
       keywords: ['open', 'camera', 'photo', 'webcam', 'capture', 'picture'],
       category: 'system',
     },
+    ...[
+      { id: 'system-screenshot-region', title: 'Capture Area', keywords: ['screenshot', 'capture', 'region', '截图', '区域截图'] },
+      { id: 'system-screenshot-window', title: 'Capture Window', keywords: ['screenshot', 'capture', 'window', '截图', '窗口截图'] },
+      { id: 'system-screenshot-fullscreen', title: 'Capture Screen', keywords: ['screenshot', 'capture', 'fullscreen', '截图', '全屏截图'] },
+      { id: 'system-screenshot-pin-clipboard', title: 'Pin Clipboard Image', keywords: ['screenshot', 'pin', 'clipboard', '贴图', '贴屏'] },
+      { id: 'system-translation-open', title: 'Translate', keywords: ['translation', 'translate', '翻译'] },
+      { id: 'system-translation-selection', title: 'Translate Selected Text', keywords: ['translation', 'selection', 'translate', '划词翻译', '翻译选中文字'] },
+      { id: 'system-translation-capture', title: 'Translate Screenshot', keywords: ['translation', 'screenshot', 'ocr', '截图翻译'] },
+      { id: 'system-file-shelf', title: 'File Shelf', keywords: ['file', 'shelf', 'drop', '文件中转站', '文件暂存'] },
+    ].map(command => ({ ...command, category: 'system' as const, iconEmoji: command.id.includes('translation') ? '🌐' : command.id.includes('file-shelf') ? '📥' : '📷' })),
     {
       id: 'system-create-script-command',
       title: 'Create Script Command',

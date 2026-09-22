@@ -17,6 +17,9 @@ import {
 const hash = window.location.hash;
 
 function loadRoot(): Promise<React.ComponentType> {
+  if (hash.startsWith('#/file-shelf')) return import('./file-shelf/FileShelfApp').then((m) => m.default);
+  if (hash.startsWith('#/translation')) return import('./TranslationApp').then((m) => m.default);
+  if (hash.startsWith('#/screenshot')) return import('./screenshot/ScreenshotApp').then((m) => m.default);
   if (hash.includes('/canvas')) return import('./CanvasApp').then((m) => m.default);
   if (hash.includes('/notes')) return import('./NotesApp').then((m) => m.default);
   if (hash.includes('/prompt')) return import('./PromptApp').then((m) => m.default);

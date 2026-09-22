@@ -1,0 +1,17 @@
+.screenshot-app { height:100vh; display:flex; flex-direction:column; color:var(--text-primary); background:var(--bg-primary,#202027); font:13px -apple-system,BlinkMacSystemFont,sans-serif; overflow:hidden; }
+.screenshot-toolbar { height:58px; flex:none; display:flex; align-items:center; gap:8px; padding:0 12px; border-bottom:1px solid var(--border-color, #ffffff18); -webkit-app-region:drag; }
+.screenshot-title { flex:1; font-weight:600; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.screenshot-actions { display:flex; gap:3px; -webkit-app-region:no-drag; }
+.screenshot-app button { border:0; border-radius:7px; padding:7px; background:transparent; color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.screenshot-app button:hover { background:var(--bg-hover,#ffffff14); }
+.screenshot-app button:disabled { opacity:.4; cursor:default; }
+.screenshot-app button:focus-visible { outline:2px solid #818cf8; outline-offset:-1px; }
+.screenshot-image-area { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:12px; overflow:hidden; background:repeating-conic-gradient(#80808015 0% 25%,transparent 0% 50%) 0/16px 16px; }
+.screenshot-image-area img { max-width:100%; max-height:100%; object-fit:contain; user-select:none; }
+.screenshot-app footer { flex:none; padding:8px 12px; font-size:11px; color:var(--text-secondary); border-top:1px solid var(--border-color,#ffffff18); min-height:31px; }
+.screenshot-ocr { flex:none; padding:10px 12px; border-top:1px solid var(--border-color,#ffffff18); }
+.screenshot-ocr > div { display:flex; align-items:center; justify-content:space-between; }
+.screenshot-ocr textarea { box-sizing:border-box; width:100%; height:120px; resize:vertical; padding:8px; background:transparent; border:1px solid var(--border-color,#ffffff20); border-radius:6px; color:inherit; font-size:12px; }
+.is-pinned .screenshot-image-area { padding:0; }
+.is-pinned .screenshot-title { font-size:11px; }
+.screenshot-toast { position:absolute; bottom:8px; left:8px; right:8px; background:#18181bdf; color:white; border-radius:6px; font-size:11px; padding:6px; pointer-events:none; }

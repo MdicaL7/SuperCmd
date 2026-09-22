@@ -523,6 +523,17 @@ export function renderSuperCmdLogoIcon(): React.ReactNode {
 export function getCommandDisplayTitle(command: CommandInfo, t?: Translator): string {
   if (command.category === 'app' && isSuperCmdAppTitle(command.title)) return 'SuperCmd';
   if (t) {
+    const toolboxTitles: Record<string, string> = {
+      'system-screenshot-region': 'screenshot.commands.region',
+      'system-screenshot-window': 'screenshot.commands.window',
+      'system-screenshot-fullscreen': 'screenshot.commands.fullscreen',
+      'system-screenshot-pin-clipboard': 'screenshot.commands.pinClipboard',
+      'system-translation-open': 'translation.commands.open',
+      'system-translation-selection': 'translation.commands.selection',
+      'system-translation-capture': 'translation.commands.capture',
+      'system-file-shelf': 'fileShelf.title',
+    };
+    if (toolboxTitles[command.id]) return t(toolboxTitles[command.id]);
     switch (String(command.id || '').trim()) {
       case 'system-open-settings':
         return t('settings.title');

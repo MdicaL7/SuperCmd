@@ -17,12 +17,18 @@ function run(cmd) {
 const swift = [
   ['dist/native/get-selected-text', 'src/native/get-selected-text.swift',
     '-framework Foundation -framework ApplicationServices -framework AppKit'],
+  ['dist/native/translation-selected-text', 'src/native/translation-selected-text.swift',
+    '-framework Foundation -framework ApplicationServices -framework AppKit'],
+  ['dist/native/file-shelf-clipboard', 'src/native/file-shelf-clipboard.swift',
+    '-framework AppKit -framework Foundation'],
   ['dist/native/color-picker', 'src/native/color-picker.swift',
     '-framework AppKit'],
   ['dist/native/keyboard-lock', 'src/native/keyboard-lock.swift',
     '-framework CoreGraphics -framework Foundation'],
   ['dist/native/screen-ocr', 'src/native/screen-ocr.swift',
     '-framework AppKit -framework CoreGraphics -framework Foundation -framework Vision'],
+  ['dist/native/screenshot-ocr', 'src/native/screenshot-ocr.swift',
+    '-framework AppKit -framework Foundation -framework Vision'],
   ['dist/native/snippet-expander', 'src/native/snippet-expander.swift',
     '-framework AppKit'],
   ['dist/native/menu-item-search', 'src/native/menu-item-search.swift',
@@ -48,9 +54,15 @@ const swift = [
     '-framework AVFoundation -framework Foundation'],
 ];
 
+const toolboxOnly = process.argv.includes('--toolbox-only');
+const toolboxHelpers = new Set(['screenshot-ocr', 'translation-selected-text', 'file-shelf-clipboard']);
 for (const [out, src, frameworks] of swift) {
+  if (toolboxOnly && !toolboxHelpers.has(out.split('/').pop())) continue;
   run(`swiftc -O -o ${out} ${src} ${frameworks}`);
 }
+
+// The toolbox has no model downloads or native Node addon dependency.
+if (toolboxOnly) process.exit(0);
 
 // Build native Node addon (native_helpers.node)
 run(

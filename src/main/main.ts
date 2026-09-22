@@ -15,6 +15,9 @@ process.stdout?.on?.('error', () => {});
 process.stderr?.on?.('error', () => {});
 
 import { isIsolatedDevProfile } from './dev-profile';
+import { createScreenshotFeature } from './screenshot-service';
+import { createTranslationFeature } from './translation-feature';
+import { registerFileShelf } from './file-shelf';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -2489,6 +2492,9 @@ let extensionStoreWindow: InstanceType<typeof BrowserWindow> | null = null;
 let notesWindow: InstanceType<typeof BrowserWindow> | null = null;
 let pendingNoteJson: string | null = null;
 let canvasWindow: InstanceType<typeof BrowserWindow> | null = null;
+let screenshotFeature: ReturnType<typeof createScreenshotFeature> | null = null;
+let translationFeature: ReturnType<typeof createTranslationFeature> | null = null;
+let fileShelfFeature: ReturnType<typeof registerFileShelf> | null = null;
 let pendingCanvasJson: string | null = null;
 let isVisible = false;
 let isAppQuitting = false;
@@ -10680,6 +10686,18 @@ async function confirmQuitAllApps(source: 'launcher' | 'hotkey' | 'widget'): Pro
 }
 
 async function runCommandById(commandId: string, source: 'launcher' | 'hotkey' | 'widget' = 'launcher'): Promise<boolean> {
+  if (commandId === 'system-file-shelf' && fileShelfFeature) {
+    hideWindow();
+    fileShelfFeature.open();
+    return true;
+  }
+  if (commandId.startsWith('system-translation-') && translationFeature) {
+    if (commandId === 'system-translation-open') hideWindow();
+    return translationFeature.executeCommand(commandId, source);
+  }
+  if (commandId.startsWith('system-screenshot-') && screenshotFeature) {
+    return screenshotFeature.executeCommand(commandId);
+  }
   if (isAIDependentSystemCommand(commandId) && isAIDisabledInSettings()) {
     return false;
   }
@@ -13603,6 +13621,31 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 app.whenReady().then(async () => {
+  screenshotFeature = createScreenshotFeature({
+    loadWindowUrl,
+    prepareCapture: () => hideWindow(),
+    translate: input => {
+      if (!translationFeature) throw new Error('Translation is unavailable');
+      translationFeature.openTranslation(input);
+    },
+  });
+  translationFeature = createTranslationFeature({
+    loadWindowUrl,
+    prepareSelection: async source => {
+      // Launcher selection must come from the app that opened the launcher.
+      if (source === 'launcher' && isVisible) {
+        const previous = resolveLauncherEntryFrontmostApp();
+        if (previous) lastFrontmostApp = previous;
+      } else captureFrontmostAppContext();
+      hideWindow();
+      await activateLastFrontmostApp();
+      await new Promise(resolve => setTimeout(resolve, 150));
+    },
+    captureAndRecognize: options => screenshotFeature!.captureAndRecognize(options),
+    releaseCapture: id => screenshotFeature?.release(id),
+    openAISettings: () => openSettingsWindow({ tab: 'ai' }),
+  });
+  fileShelfFeature = registerFileShelf({ loadWindowUrl });
   trackEvent("app_started");
   if (!isIsolatedDevProfile) app.setAsDefaultProtocolClient('supercmd');
   scrubInternalClipboardProbe('app startup');
@@ -19349,6 +19392,13 @@ app.on('before-quit', () => {
 });
 
 app.on('will-quit', () => {
+  // File shelf may defer before-quit until pending writes have finished.
+  fileShelfFeature?.dispose();
+  fileShelfFeature = null;
+  translationFeature?.dispose();
+  translationFeature = null;
+  screenshotFeature?.dispose();
+  screenshotFeature = null;
   prepareWindowsForAppQuit();
   stopInstalledAppsWatchers();
   globalShortcut.unregisterAll();

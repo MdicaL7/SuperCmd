@@ -1,7 +1,7 @@
 {
   "name": "supercmd",
   "version": "1.0.26",
-  "description": "SuperCmd — Productivity supercharged",
+  "description": "SuperCmd \u2014 Productivity supercharged",
   "author": "Shobhit Bhosure - (https://x.com/nullbytes00)",
   "homepage": "https://supercmd.sh",
   "main": "dist/main/main.js",
@@ -21,7 +21,9 @@
     "postinstall": "node scripts/ensure-cross-arch-esbuild.mjs && electron-builder install-app-deps",
     "start": "electron .",
     "package": "cross-env NODE_ENV=production npm run build && electron-builder",
-    "package:unsigned": "cross-env NODE_ENV=production CSC_IDENTITY_AUTO_DISCOVERY=false npm run build && electron-builder --mac dmg -c.mac.identity=null -c.mac.notarize=false"
+    "package:unsigned": "cross-env NODE_ENV=production CSC_IDENTITY_AUTO_DISCOVERY=false npm run build && electron-builder --mac dmg -c.mac.identity=null -c.mac.notarize=false",
+    "build:toolbox-native": "node scripts/build-native.mjs --toolbox-only",
+    "preview:toolbox": "node scripts/run-toolbox-preview.mjs"
   },
   "license": "ISC",
   "devDependencies": {
