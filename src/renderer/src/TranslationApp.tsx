@@ -28,7 +28,7 @@ export default function TranslationApp() {
       const previous = latest.current;
       latest.current = next;
       if (next.text !== previous.text || next.sourceVersion !== previous.sourceVersion || previous.revision < 0) setText(next.text);
-      if (next.target !== previous.target || previous.revision < 0) setTarget(next.target);
+      if (next.target !== previous.target || next.sourceVersion !== previous.sourceVersion || previous.revision < 0) setTarget(next.target);
       setState(next);
       setCopied(false);
       setBridgeError(false);
