@@ -14,6 +14,7 @@
 process.stdout?.on?.('error', () => {});
 process.stderr?.on?.('error', () => {});
 
+import { isIsolatedDevProfile } from './dev-profile';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -13603,7 +13604,7 @@ protocol.registerSchemesAsPrivileged([
 
 app.whenReady().then(async () => {
   trackEvent("app_started");
-  app.setAsDefaultProtocolClient('supercmd');
+  if (!isIsolatedDevProfile) app.setAsDefaultProtocolClient('supercmd');
   scrubInternalClipboardProbe('app startup');
   // Warm the worker so the first window-management action does not race spawn.
   setTimeout(() => { ensureWindowManagerWorker(); }, 0);
