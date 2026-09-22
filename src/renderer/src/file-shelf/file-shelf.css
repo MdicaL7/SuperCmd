@@ -1,0 +1,54 @@
+.file-shelf { --shelf-bg: #f7f8fa; --shelf-panel: #fff; --shelf-text: #20242d; --shelf-muted: #747d8a; --shelf-line: #e5e8ee; --shelf-accent: #276ac7; --shelf-selection: #e8f0fe; display: flex; flex-direction: column; height: 100vh; color: var(--shelf-text); background: var(--shelf-bg); font: 13px -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; position: relative; }
+.dark .file-shelf { --shelf-bg: #17191e; --shelf-panel: #202329; --shelf-text: #edf0f6; --shelf-muted: #9aa3b2; --shelf-line: #30353e; --shelf-accent: #81b5ff; --shelf-selection: #263950; }
+.file-shelf button { color: inherit; cursor: pointer; transition: background 120ms ease; }
+.file-shelf button:disabled { opacity: .35; cursor: default; }
+.file-shelf button:focus-visible, .shelf-item:focus-visible, .shelf-search:focus-within { outline: 2px solid var(--shelf-accent); outline-offset: -2px; }
+.file-shelf-titlebar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 13px 0 85px; -webkit-app-region: drag; font-size: 12px; font-weight: 600; color: var(--shelf-muted); }
+.file-shelf-titlebar > span { flex: 1; }
+.file-shelf-titlebar button { -webkit-app-region: no-drag; }
+.file-shelf .shelf-icon-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 29px; height: 29px; background: transparent; border: 0; border-radius: 7px; color: var(--shelf-muted); }
+.file-shelf .shelf-icon-button:hover:not(:disabled) { background: var(--shelf-line); color: var(--shelf-text); }
+.file-shelf .shelf-icon-button.is-active { color: var(--shelf-accent); background: var(--shelf-selection); }
+.shelf-heading { display: flex; align-items: center; gap: 11px; padding: 9px 20px 17px; }
+.shelf-heading-icon { width: 43px; height: 43px; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--shelf-accent); background: var(--shelf-selection); flex-shrink: 0; }
+.shelf-heading h1 { margin: 0 0 4px; font-size: 17px; font-weight: 650; letter-spacing: -.3px; }
+.shelf-heading p { margin: 0; color: var(--shelf-muted); font-size: 11px; }
+.shelf-add-actions { padding: 0 20px 13px; display: flex; gap: 8px; }
+.shelf-add-actions button { display: inline-flex; justify-content: center; align-items: center; gap: 6px; background: var(--shelf-panel); border: 1px solid var(--shelf-line); padding: 7px 12px; border-radius: 8px; font-size: 12px; }
+.shelf-add-actions button:hover:not(:disabled) { background: var(--shelf-selection); }
+.shelf-search { margin: 0 20px 8px; height: 32px; border: 1px solid var(--shelf-line); border-radius: 8px; display: flex; align-items: center; gap: 7px; padding: 0 8px; color: var(--shelf-muted); background: var(--shelf-panel); flex-shrink: 0; }
+.shelf-search input { min-width: 0; flex: 1; background: transparent; border: none; outline: none; color: var(--shelf-text); font-size: 12px; }
+.shelf-search input::placeholder { color: var(--shelf-muted); }
+.shelf-selection-actions { padding: 0 20px; display: flex; height: 33px; align-items: center; gap: 12px; font-size: 11px; color: var(--shelf-muted); flex-shrink: 0; }
+.shelf-selection-actions label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.shelf-selection-actions > span { margin-left: auto; }
+.file-shelf input[type=checkbox] { accent-color: #4d8cdc; width: 13px; height: 13px; flex-shrink: 0; cursor: pointer; }
+.shelf-items { flex: 1; min-height: 80px; overflow-y: auto; overflow-x: hidden; padding: 4px 12px 8px; }
+.shelf-item { display: flex; align-items: center; gap: 9px; min-height: 64px; padding: 10px 9px; border-radius: 9px; margin: 2px 0; cursor: default; border: 1px solid transparent; user-select: none; }
+.shelf-item:hover { background: var(--shelf-panel); }
+.shelf-item.selected { background: var(--shelf-selection); border-color: color-mix(in srgb, var(--shelf-accent) 22%, transparent); }
+.shelf-file-icon { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--shelf-accent); }
+.shelf-file-icon img { max-width: 32px; max-height: 32px; }
+.shelf-file-details { min-width: 0; flex: 1; }
+.shelf-file-name, .shelf-file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shelf-file-name { font-size: 12px; font-weight: 550; margin-bottom: 4px; }
+.shelf-file-path { font-size: 10px; color: var(--shelf-muted); }
+.shelf-file-warning { font-size: 10px; color: #c16e35; margin-top: 4px; }
+.dark .shelf-file-warning { color: #eeb380; }
+.shelf-item.unavailable .shelf-file-icon { opacity: .45; }
+.shelf-empty { height: 100%; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 9px; padding: 20px 27px; color: var(--shelf-muted); }
+.shelf-empty-icon { color: var(--shelf-muted); opacity: .8; }
+.shelf-empty h2 { font-size: 14px; font-weight: 550; color: var(--shelf-text); margin: 0; }
+.shelf-empty p { font-size: 11px; line-height: 1.6; max-width: 280px; margin: 0; }
+.shelf-feedback { padding: 7px 20px 10px; flex-shrink: 0; min-height: 35px; font-size: 10px; color: var(--shelf-muted); }
+.shelf-feedback p { margin: 0; line-height: 1.5; overflow-wrap: anywhere; max-height: 58px; overflow-y: auto; }
+.shelf-error { color: #b84343; }
+.dark .shelf-error { color: #ffa4a4; }
+.shelf-notice { color: var(--shelf-accent); }
+.shelf-footer { display: flex; align-items: center; gap: 9px; padding: 12px 16px; border-top: 1px solid var(--shelf-line); flex-shrink: 0; background: var(--shelf-panel); }
+.shelf-copy { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; background: #367ad0; color: white !important; font-size: 12px; border-radius: 8px; min-height: 33px; padding: 0 12px; }
+.shelf-copy kbd { font: 10px -apple-system, sans-serif; opacity: .65; margin-left: 8px; }
+.shelf-clear { margin-left: auto; border: 0; background: transparent; color: var(--shelf-muted) !important; font-size: 11px; padding: 8px 3px; }
+.shelf-drop-overlay { position: absolute; inset: 48px 10px 10px; background: var(--shelf-selection); color: var(--shelf-accent); border: 2px dashed var(--shelf-accent); border-radius: 14px; display: flex; flex-direction: column; gap: 13px; align-items: center; justify-content: center; pointer-events: none; z-index: 10; }
+.shelf-drop-overlay strong { font-size: 18px; }
+.shelf-drop-overlay span { font-size: 12px; text-align: center; max-width: 260px; }
