@@ -390,7 +390,7 @@ export function registerFileShelf(options: FileShelfOptions): {
 
   handle('clear', () => run(async () => {
     await store.clear();
-    updateShelfBounds();
+    hide();
   }));
 
   handle('copy', (_event, ids: unknown) => run(async () => {
@@ -500,7 +500,7 @@ export function registerFileShelf(options: FileShelfOptions): {
         click: () => {
           void run(async () => {
             await store.clear();
-            updateShelfBounds();
+            hide();
           });
         },
       },

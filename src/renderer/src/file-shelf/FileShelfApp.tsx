@@ -198,9 +198,7 @@ export default function FileShelfApp(): React.ReactElement {
         onContextMenu={handleContextMenu(displayItems[displayItems.length - 1]?.id)}
         title={items.length > 0 ? 'Drag out to Finder or other apps' : undefined}
       >
-        {items.length === 0 ? (
-          <div className="pile-empty-slot" />
-        ) : (
+        {items.length === 0 ? null : (
           <div className={`pile-stack stack-${displayItems.length}`}>
             {displayItems.map((item, index) => {
               const positionClass =
