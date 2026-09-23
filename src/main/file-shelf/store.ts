@@ -17,7 +17,7 @@ function isBounds(value: unknown): value is FileShelfBounds {
   if (!value || typeof value !== 'object') return false;
   const bounds = value as FileShelfBounds;
   return [bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite)
-    && bounds.width >= 320 && bounds.height >= 280;
+    && bounds.width >= 100 && bounds.height >= 100;
 }
 
 export async function writeShelfDocument(filePath: string, document: ShelfDocument): Promise<void> {

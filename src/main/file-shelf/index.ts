@@ -75,7 +75,25 @@ export function registerFileShelf(options: FileShelfOptions): {
     for (const entry of store.entries) {
       if (iconCache.has(entry.path) || pendingIcons.has(entry.path)) continue;
       pendingIcons.add(entry.path);
-      void app.getFileIcon(entry.path, { size: 'normal' }).then((icon) => {
+
+      const isImage = /\.(jpe?g|png|gif|webp|bmp|heic|tiff?)$/i.test(entry.path);
+      if (isImage) {
+        try {
+          const img = nativeImage.createFromPath(entry.path);
+          if (!img.isEmpty()) {
+            const size = img.getSize();
+            const targetW = 200;
+            const targetH = Math.round((size.height / (size.width || 1)) * targetW);
+            const resized = img.resize({ width: targetW, height: Math.min(260, Math.max(120, targetH)), quality: 'good' });
+            iconCache.set(entry.path, resized);
+            pendingIcons.delete(entry.path);
+            if (window && !window.isDestroyed()) window.webContents.send('file-shelf:changed', snapshot());
+            continue;
+          }
+        } catch {}
+      }
+
+      void app.getFileIcon(entry.path, { size: 'large' }).then((icon) => {
         iconCache.set(entry.path, icon.isEmpty() ? fallbackIcon : icon);
         if (window && !window.isDestroyed()) window.webContents.send('file-shelf:changed', snapshot());
       }).catch(() => {
@@ -100,9 +118,18 @@ export function registerFileShelf(options: FileShelfOptions): {
   const saveBounds = async () => {
     if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
     if (window && !window.isDestroyed() && currentMode === 'shelf') {
-      await store.saveBounds(window.getBounds()).catch(reportError);
+      try {
+        const b = window.getBounds();
+        if (b.width >= 100 && b.height >= 100) {
+          await store.saveBounds(b);
+        }
+      } catch (err) {
+        console.warn('[FileShelf] bounds save skipped:', err);
+      }
     }
-    await store.flush();
+    try {
+      await store.flush();
+    } catch {}
   };
 
   const scheduleBounds = () => {
@@ -126,7 +153,7 @@ export function registerFileShelf(options: FileShelfOptions): {
       : { workArea: { x: 0, y: 0, width: 1440, height: 900 } };
     const area = display.workArea;
     const width = 180;
-    const height = 130;
+    const height = 180;
 
     let x = Math.round(pt.x - width / 2);
     let y = Math.round(pt.y + 15);
@@ -141,20 +168,9 @@ export function registerFileShelf(options: FileShelfOptions): {
     return { x, y, width, height };
   };
 
-  const getShelfBounds = (itemCount = store.entries.length, referenceBounds?: FileShelfBounds): FileShelfBounds => {
-    let width = 360;
-    let height = 160;
-    if (itemCount === 0) {
-      width = 280; height = 130;
-    } else if (itemCount === 1) {
-      width = 280; height = 110;
-    } else if (itemCount === 2) {
-      width = 340; height = 130;
-    } else if (itemCount <= 4) {
-      width = 360; height = 160;
-    } else {
-      width = 400; height = 200;
-    }
+  const getShelfBounds = (_itemCount = store.entries.length, referenceBounds?: FileShelfBounds): FileShelfBounds => {
+    const width = 180;
+    const height = 180;
 
     const saved = referenceBounds || store.bounds;
     const basePoint = saved
@@ -166,8 +182,6 @@ export function registerFileShelf(options: FileShelfOptions): {
       : (screen.getDisplayNearestPoint ? screen.getDisplayNearestPoint(basePoint) : { workArea: { x: 0, y: 0, width: 1440, height: 900 } });
 
     const area = display.workArea;
-    width = Math.min(width, area.width - 16);
-    height = Math.min(height, area.height - 16);
 
     let x = saved ? saved.x : Math.round(basePoint.x - width / 2);
     let y = saved ? saved.y : Math.round(basePoint.y + 15);
@@ -197,8 +211,8 @@ export function registerFileShelf(options: FileShelfOptions): {
     const initialBounds = getTargetBounds();
     window = new BrowserWindow({
       ...initialBounds,
-      minWidth: 160,
-      minHeight: 110,
+      minWidth: 140,
+      minHeight: 140,
       frame: false,
       transparent: true,
       hasShadow: true,

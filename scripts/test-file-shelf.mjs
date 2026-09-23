@@ -206,7 +206,7 @@ test('state transitions: hidden -> drop target -> shelf -> toggle hide/show', as
   assert.equal(f.window.visible, true);
   assert.equal(f.controller.getMode(), 'target');
   assert.equal(f.window.bounds.width, 180);
-  assert.equal(f.window.bounds.height, 130);
+  assert.equal(f.window.bounds.height, 180);
   assert.equal(f.invoke('get-state').mode, 'target');
 
   // Transition 2: Drop Target -> Shelf on file drop
@@ -215,7 +215,7 @@ test('state transitions: hidden -> drop target -> shelf -> toggle hide/show', as
   assert.equal(f.controller.getMode(), 'shelf');
   assert.equal(f.window.visible, true);
   assert.equal(f.invoke('get-state').mode, 'shelf');
-  assert.ok(f.window.bounds.width >= 280, 'bounds morphed to shelf size');
+  assert.equal(f.window.bounds.width, 180, 'bounds morphed to shelf size');
 
   // Transition 3: Cancel / hide
   await f.invoke('cancel-target');
