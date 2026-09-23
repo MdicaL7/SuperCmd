@@ -1259,14 +1259,22 @@ export function loadSettings(): AppSettings {
         ...DEFAULT_SETTINGS.commandAliases,
         ...normalizedAliases,
       },
-      pinnedCommands: parsed.pinnedCommands ?? DEFAULT_SETTINGS.pinnedCommands,
+      pinnedCommands: (Array.isArray(parsed.pinnedCommands)
+        ? parsed.pinnedCommands
+        : DEFAULT_SETTINGS.pinnedCommands
+      ).filter((id: string) => id !== 'settings--'),
       pinnedFiles: Array.isArray(parsed.pinnedFiles)
         ? parsed.pinnedFiles
             .map((value: any) => String(value || '').trim())
             .filter(Boolean)
         : DEFAULT_SETTINGS.pinnedFiles,
-      recentCommands: parsed.recentCommands ?? DEFAULT_SETTINGS.recentCommands,
-      recentCommandLaunchCounts: normalizeRecentCommandLaunchCounts(parsed.recentCommandLaunchCounts),
+      recentCommands: (Array.isArray(parsed.recentCommands)
+        ? parsed.recentCommands
+        : DEFAULT_SETTINGS.recentCommands
+      ).filter((id: string) => id !== 'settings--'),
+      recentCommandLaunchCounts: Object.fromEntries(
+        Object.entries(normalizeRecentCommandLaunchCounts(parsed.recentCommandLaunchCounts)).filter(([k]) => k !== 'settings--')
+      ),
       // Existing users with older settings should not be forced into onboarding.
       hasSeenOnboarding:
         parsed.hasSeenOnboarding ?? true,

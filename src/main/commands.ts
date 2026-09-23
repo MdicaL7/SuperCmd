@@ -119,7 +119,7 @@ const STALE_REFRESH_COOLDOWN_MS = 15_000;
 // and are re-attached on load.  Bump the version when CommandInfo shape changes
 // in a breaking way.
 
-const COMMANDS_DISK_CACHE_VERSION = 1;
+const COMMANDS_DISK_CACHE_VERSION = 2;
 let commandsDiskCachePath: string | null = null;
 
 function getCommandsDiskCachePath(): string {
@@ -1074,6 +1074,7 @@ async function discoverApplications(): Promise<CommandInfo[]> {
 async function discoverSystemSettings(): Promise<CommandInfo[]> {
   const results: CommandInfo[] = [];
   const seen = new Set<string>();
+  const usedSettingsIds = new Set<string>();
 
   // ── Source 1: .appex extensions (macOS Ventura+) ──
   const extDir = '/System/Library/ExtensionKit/Extensions';
@@ -1141,8 +1142,21 @@ async function discoverSystemSettings(): Promise<CommandInfo[]> {
           // Try fast .icns extraction (will return undefined for Assets.car-only bundles)
           const iconDataUrl = await getIconDataUrl(extPath);
 
+          const bundleSlug = (openIdentifier || bundleId || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          const fallbackSlug = key.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') ||
+            crypto.createHash('md5').update(key).digest('hex').slice(0, 8);
+          const safeSlug = bundleSlug || fallbackSlug;
+          let id = `settings-${safeSlug}`;
+          if (usedSettingsIds.has(id)) {
+            id = `${id}-${crypto.createHash('md5').update(extPath).digest('hex').slice(0, 6)}`;
+          }
+          usedSettingsIds.add(id);
+
           const paneCommand: CommandInfo = {
-            id: `settings-${key.replace(/[^a-z0-9]+/g, '-')}`,
+            id,
             title: displayName,
             keywords: buildSettingsKeywords(displayName, bundleId, legacyBundleId, [fallbackDisplayName]),
             iconDataUrl,
@@ -1212,8 +1226,21 @@ async function discoverSystemSettings(): Promise<CommandInfo[]> {
 
           const iconDataUrl = await getIconDataUrl(panePath);
 
+          const paneSlug = (paneBundleId || rawName || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          const fallbackSlug = key.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') ||
+            crypto.createHash('md5').update(key).digest('hex').slice(0, 8);
+          const safeSlug = paneSlug || fallbackSlug;
+          let id = `settings-${safeSlug}`;
+          if (usedSettingsIds.has(id)) {
+            id = `${id}-${crypto.createHash('md5').update(panePath).digest('hex').slice(0, 6)}`;
+          }
+          usedSettingsIds.add(id);
+
           const paneCommand: CommandInfo = {
-            id: `settings-${key.replace(/[^a-z0-9]+/g, '-')}`,
+            id,
             title: displayName,
             keywords: buildSettingsKeywords(displayName, paneBundleId, undefined, [fallbackDisplayName]),
             iconDataUrl,
