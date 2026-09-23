@@ -303,6 +303,12 @@ export function registerFileShelf(options: FileShelfOptions): {
       window.hide();
       if (currentMode === 'shelf') saveBounds();
     }
+    if (store.entries.length > 0) {
+      void store.clear().then(() => {
+        iconCache.clear();
+        broadcast();
+      }).catch(() => {});
+    }
   }
 
   const startGestureMonitor = () => {
