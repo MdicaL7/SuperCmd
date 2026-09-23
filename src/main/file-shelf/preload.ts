@@ -5,9 +5,15 @@ const api: FileShelfAPI = {
   getState: () => ipcRenderer.invoke('file-shelf:get-state'),
   addFiles: (files) => {
     try {
-      const paths = Array.from(files, (file) => webUtils.getPathForFile(file));
-      if (!paths.length || paths.some((filePath) => !filePath)) {
-        return Promise.resolve({ ok: false, error: 'Drop files or folders from Finder. Web images and links are not files yet.' });
+      const paths = Array.from(files, (file) => {
+        try {
+          return webUtils.getPathForFile(file) || (file as any).path || '';
+        } catch {
+          return (file as any).path || '';
+        }
+      }).filter((p): p is string => Boolean(p && typeof p === 'string'));
+      if (!paths.length) {
+        return Promise.resolve({ ok: false, error: 'Drop files or folders from Finder.' });
       }
       return ipcRenderer.invoke('file-shelf:add', paths);
     } catch {
@@ -22,7 +28,7 @@ const api: FileShelfAPI = {
   reveal: (id) => ipcRenderer.invoke('file-shelf:reveal', id),
   setAlwaysOnTop: (value) => ipcRenderer.invoke('file-shelf:set-always-on-top', value),
   setShakeToActivate: (value) => ipcRenderer.invoke('file-shelf:set-shake-to-activate', value),
-  showContextMenu: (id) => ipcRenderer.invoke('file-shelf:context-menu', id),
+  showContextMenu: (id) => ipcRenderer.invoke('file-shelf:show-context-menu', id),
   cancelTarget: () => ipcRenderer.invoke('file-shelf:cancel-target'),
   hide: () => ipcRenderer.invoke('file-shelf:hide'),
   onChanged: (callback) => {

@@ -93,7 +93,7 @@ export function registerFileShelf(options: FileShelfOptions): {
         } catch {}
       }
 
-      void app.getFileIcon(entry.path, { size: 'large' }).then((icon) => {
+      void app.getFileIcon(entry.path, { size: 'normal' }).then((icon) => {
         iconCache.set(entry.path, icon.isEmpty() ? fallbackIcon : icon);
         if (window && !window.isDestroyed()) window.webContents.send('file-shelf:changed', snapshot());
       }).catch(() => {
