@@ -43,7 +43,8 @@ export function createScreenshotFeature(deps: Dependencies) {
     if (busy) return { status: 'error', message: 'A screenshot is already in progress.' };
     if (options.signal?.aborted) return { status: 'cancelled' };
     if (process.platform !== 'darwin') return { status: 'error', message: 'Screenshots currently require macOS.' };
-    if (systemPreferences.getMediaAccessStatus('screen') === 'denied') {
+    const mediaStatus = systemPreferences.getMediaAccessStatus('screen');
+    if (mediaStatus === 'denied' && app.isPackaged) {
       return { status: 'error', message: 'Allow SuperCmd in System Settings → Privacy & Security → Screen Recording, then reopen the app.' };
     }
     busy = true;
