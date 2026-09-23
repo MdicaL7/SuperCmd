@@ -59,7 +59,7 @@ export function useWhisperManager({
 
   const whisperPortalTarget = useDetachedPortalWindow(showWhisper, {
     name: 'supercmd-whisper-window',
-    title: 'SuperCmd Whisper',
+    title: 'WUDI Whisper',
     width: whisperWindowWidth,
     height: 88, // Keep constant height; only hide/show the coachmark, don't resize window
     anchor: 'center-bottom',

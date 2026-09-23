@@ -221,12 +221,16 @@ import {
   previewRaycastConfigImport,
 } from './raycast-config-import';
 import { runExecCommand, type ExecCommandOptions } from './exec-command';
+import { maybeMigrateUserDataFromSuperCmd } from './user-data-migration';
 
 const electron = require('electron');
 const { app, BrowserWindow, globalShortcut, ipcMain, screen, shell, Menu, Tray, nativeImage, protocol, net, dialog, systemPreferences, clipboard: systemClipboard } = electron;
 try {
   app.setName(APP_NAME);
-} catch {}
+  maybeMigrateUserDataFromSuperCmd();
+} catch (e) {
+  console.error('[Startup] Failed during early app name / migration setup:', e);
+}
 
 // ─── Native Binary Helpers ──────────────────────────────────────────
 
@@ -576,10 +580,10 @@ async function transcribeAudioWithParakeet(opts: {
 }): Promise<string> {
   const status = getParakeetModelStatus();
   if (status.state === 'downloading') {
-    throw new Error('Parakeet models are still downloading. Finish setup from onboarding or Settings -> AI -> SuperCmd Whisper.');
+    throw new Error('Parakeet models are still downloading. Finish setup from onboarding or Settings -> AI -> WUDI Whisper.');
   }
   if (status.state !== 'downloaded') {
-    throw new Error('Parakeet models have not been downloaded yet. Download them from onboarding or Settings -> AI -> SuperCmd Whisper.');
+    throw new Error('Parakeet models have not been downloaded yet. Download them from onboarding or Settings -> AI -> WUDI Whisper.');
   }
 
   // Ensure the persistent server process is running (models loaded in memory)
@@ -838,7 +842,7 @@ async function transcribeAudioWithQwen3(opts: {
 }): Promise<string> {
   const status = getQwen3ModelStatus();
   if (status.state === 'downloading') throw new Error('Qwen3 models are still downloading.');
-  if (status.state !== 'downloaded') throw new Error('Qwen3 models have not been downloaded yet. Download them from Settings -> AI -> SuperCmd Whisper.');
+  if (status.state !== 'downloaded') throw new Error('Qwen3 models have not been downloaded yet. Download them from Settings -> AI -> WUDI Whisper.');
 
   await ensureQwen3Server();
 
@@ -944,7 +948,7 @@ async function downloadFileWithRedirects(
       parsedUrl.toString(),
       {
         headers: {
-          'User-Agent': 'SuperCmd/1.0 whisper.cpp bootstrap',
+          'User-Agent': 'WUDI/1.0 whisper.cpp bootstrap',
           'Accept': '*/*',
         },
       },
@@ -1109,7 +1113,7 @@ function ensureWhisperCppTranscriberBinary(): string {
   const runtimeDir = getWhisperCppRuntimeDir();
   if (!fs.existsSync(frameworkPath)) {
     throw new Error(
-      `SuperCmd Whisper runtime is missing. Rebuild native helpers to download the official ${WHISPERCPP_FRAMEWORK_VERSION} macOS framework.`
+      `WUDI Whisper runtime is missing. Rebuild native helpers to download the official ${WHISPERCPP_FRAMEWORK_VERSION} macOS framework.`
     );
   }
 
@@ -1120,7 +1124,7 @@ function ensureWhisperCppTranscriberBinary(): string {
   ]);
 
   if (!sourcePath) {
-    throw new Error('SuperCmd Whisper transcriber source is missing. Run npm run build:native to regenerate the binary.');
+    throw new Error('WUDI Whisper transcriber source is missing. Run npm run build:native to regenerate the binary.');
   }
 
   fs.mkdirSync(path.dirname(binaryPath), { recursive: true });
@@ -1140,7 +1144,7 @@ function ensureWhisperCppTranscriberBinary(): string {
     console.log('[Whisper][whisper.cpp] Compiled whisper-transcriber binary');
   } catch (error) {
     console.error('[Whisper][whisper.cpp] Compile failed:', error);
-    throw new Error('Failed to compile SuperCmd Whisper transcriber. Ensure Xcode Command Line Tools are installed.');
+    throw new Error('Failed to compile WUDI Whisper transcriber. Ensure Xcode Command Line Tools are installed.');
   }
 
   return binaryPath;
@@ -1286,15 +1290,15 @@ async function transcribeAudioWithWhisperCpp(opts: {
 }): Promise<string> {
   const mimeType = String(opts.mimeType || 'audio/wav').toLowerCase();
   if (mimeType && !mimeType.includes('wav')) {
-    throw new Error(`SuperCmd Whisper transcription expects WAV audio, received ${mimeType}.`);
+    throw new Error(`WUDI Whisper transcription expects WAV audio, received ${mimeType}.`);
   }
 
   const status = getWhisperCppModelStatus();
   if (status.state === 'downloading') {
-    throw new Error('The SuperCmd Whisper model is still downloading. Finish setup from onboarding or Settings -> AI -> SuperCmd Whisper.');
+    throw new Error('The WUDI Whisper model is still downloading. Finish setup from onboarding or Settings -> AI -> WUDI Whisper.');
   }
   if (status.state !== 'downloaded') {
-    throw new Error('The SuperCmd Whisper model has not been downloaded yet. Download it from onboarding or Settings -> AI -> SuperCmd Whisper.');
+    throw new Error('The WUDI Whisper model has not been downloaded yet. Download it from onboarding or Settings -> AI -> WUDI Whisper.');
   }
 
   // Ensure the persistent server is running (model loaded in memory)
@@ -2165,9 +2169,11 @@ function isSelfManagedWindow(win: NodeWindowInfo | null | undefined): boolean {
     const exePath = app.getPath('exe');
     if (appPath === exePath) return true;
     if (appName && appPath.includes(`${appName}.app`)) return true;
+    if (appPath.includes('WUDI.app')) return true;
     if (appPath.includes('SuperCmd.app')) return true;
   }
   const title = String(win.title || '');
+  if (title.toLowerCase().includes('wudi')) return true;
   if (title.toLowerCase().includes('supercmd')) return true;
   return false;
 }
@@ -4568,7 +4574,7 @@ type HomeFolderAccessProbeResult = {
 
 function describeMicrophoneStatus(status: MicrophoneAccessStatus): string {
   if (status === 'denied') {
-    return 'Microphone access is denied. Enable SuperCmd in System Settings -> Privacy & Security -> Microphone.';
+    return `Microphone access is denied. Enable ${APP_NAME} in System Settings -> Privacy & Security -> Microphone.`;
   }
   if (status === 'restricted') {
     return 'Microphone access is restricted on this device.';
@@ -4644,7 +4650,7 @@ async function promptForHomeFolderAccess(): Promise<{ requested: boolean; select
     const hostWindow = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const result = await dialog.showOpenDialog(hostWindow, {
       title: 'Allow Home Folder Access',
-      message: 'Select your Home folder to let SuperCmd index files for Search Files.',
+      message: `Select your Home folder to let ${APP_NAME} index files for Search Files.`,
       defaultPath: homeDir,
       buttonLabel: 'Select Home Folder',
       properties: ['openDirectory', 'dontAddToRecent'],
@@ -4969,7 +4975,7 @@ async function requestOnboardingPermissionAccess(target: OnboardingPermissionTar
       canPrompt: true,
       error:
         promptResult.error ||
-        `${deniedMessage}Allow SuperCmd in System Settings -> Privacy & Security -> Files and Folders, then request again.`,
+        `${deniedMessage}Allow ${APP_NAME} in System Settings -> Privacy & Security -> Files and Folders, then request again.`,
     };
   }
 
@@ -5059,7 +5065,7 @@ async function requestOnboardingPermissionAccess(target: OnboardingPermissionTar
     canPrompt: true,
     error: binaryPath
       ? undefined
-      : 'Could not prepare Input Monitoring helper. Open System Settings -> Privacy & Security -> Input Monitoring and add SuperCmd manually.',
+      : `Could not prepare Input Monitoring helper. Open System Settings -> Privacy & Security -> Input Monitoring and add ${APP_NAME} manually.`,
   };
 }
 let lastTypingCaretPoint: { x: number; y: number } | null = null;
@@ -5534,7 +5540,7 @@ async function ensureSpeechRecognitionAccess(prompt = true): Promise<SpeechRecog
       requested: false,
       speechStatus: 'unknown',
       microphoneStatus: readMicrophoneAccessStatus(),
-      error: 'Speech recognizer helper is missing. Reinstall SuperCmd and retry.',
+      error: `Speech recognizer helper is missing. Reinstall ${APP_NAME} and retry.`,
     };
   }
 
@@ -7287,7 +7293,10 @@ function handleOAuthCallbackUrl(rawUrl: string): void {
   console.log('[OAuth] handleOAuthCallbackUrl called with:', rawUrl);
   try {
     const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'supercmd:') return;
+    const isSupportedProtocol =
+      parsed.protocol === 'wudi:' ||
+      parsed.protocol === 'supercmd:';
+    if (!isSupportedProtocol) return;
     const isOAuthCallback =
       (parsed.hostname === 'oauth' && parsed.pathname === '/callback') ||
       parsed.pathname === '/oauth/callback' ||
@@ -7931,8 +7940,8 @@ async function handleRendererRecoveryGiveUp(logMessage: string): Promise<void> {
       defaultId: 0,
       cancelId: 1,
       noLink: true,
-      title: 'SuperCmd needs to restart',
-      message: 'SuperCmd ran into a problem',
+      title: `${APP_NAME} needs to restart`,
+      message: `${APP_NAME} ran into a problem`,
       detail:
         'The launcher stopped responding and could not recover on its own. ' +
         'Relaunch to continue.',
@@ -8136,16 +8145,16 @@ function createWindow(): void {
         y: popupPos.y,
         title:
           detachedPopupName === DETACHED_WHISPER_WINDOW_NAME
-            ? 'SuperCmd Whisper'
+            ? `${APP_NAME} Whisper`
             : detachedPopupName === DETACHED_WHISPER_ONBOARDING_WINDOW_NAME
-            ? 'SuperCmd Whisper Onboarding'
+            ? `${APP_NAME} Whisper Onboarding`
             : detachedPopupName === DETACHED_PROMPT_WINDOW_NAME
-              ? 'SuperCmd Prompt'
+              ? `${APP_NAME} Prompt`
               : detachedPopupName === DETACHED_WINDOW_MANAGER_WINDOW_NAME
-                ? 'SuperCmd Window Manager'
+                ? `${APP_NAME} Window Manager`
               : detachedPopupName === DETACHED_MEMORY_STATUS_WINDOW_NAME
-                ? 'SuperCmd Status'
-              : 'SuperCmd Read',
+                ? `${APP_NAME} Status`
+              : `${APP_NAME} Read`,
         frame: false,
         titleBarStyle: 'hidden',
         titleBarOverlay: false,
@@ -9032,7 +9041,14 @@ function captureFrontmostAppContext(): void {
         info.match(/"name"\s*=\s*"([^"]*)"/i)?.[1]?.trim() ||
         '';
       const appPath = info.match(/"path"\s*=\s*"([^"]*)"/)?.[1]?.trim() || '';
-      if (bundleId !== 'com.supercmd.app' && bundleId !== 'com.supercmd' && name !== 'SuperCmd' && name !== 'Electron') {
+      if (
+        bundleId !== 'com.supercmd.app' &&
+        bundleId !== 'com.supercmd' &&
+        bundleId !== APP_ID &&
+        name !== 'SuperCmd' &&
+        name !== APP_NAME &&
+        name !== 'Electron'
+      ) {
         if (bundleId || name || appPath) {
           lastFrontmostApp = {
             name: name || (bundleId ? bundleId : 'Unknown'),
@@ -12524,37 +12540,14 @@ async function installCanvasLib(sender: any): Promise<void> {
     if (existingTgz) {
       console.log('[Canvas] Installing bundle from local package:', existingTgz);
       sender.send('canvas-install-status', { status: 'extracting', progress: 50 });
-      const { execSync } = require('child_process');
-      execSync(`tar -xzf "${existingTgz}" -C "${libDir}"`, { timeout: 30000 });
+      const { execFileSync } = require('child_process');
+      execFileSync('/usr/bin/tar', ['-xzf', existingTgz, '-C', libDir], { timeout: 30000 });
       sender.send('canvas-install-status', { status: 'done', progress: 100 });
       console.log('[Canvas] Excalidraw bundle installed successfully from local package');
       return;
     }
 
-    // Fallback: download if present, else throw error
-    const bundleUrl = 'https://supercmd-extensions.s3.amazonaws.com/canvas/excalidraw-bundle.tgz';
-    const response = await net.fetch(bundleUrl);
-
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    sender.send('canvas-install-status', { status: 'extracting', progress: 80 });
-
-    // Write tarball to temp file and extract
-    const tmpPath = path.join(libDir, 'excalidraw-bundle.tgz');
-    fs.writeFileSync(tmpPath, buffer);
-
-    // Extract using system tar (available on macOS)
-    const { execSync } = require('child_process');
-    execSync(`tar -xzf "${tmpPath}" -C "${libDir}"`, { timeout: 30000 });
-
-    // Cleanup temp file
-    fs.unlinkSync(tmpPath);
-
-    sender.send('canvas-install-status', { status: 'done', progress: 100 });
-    console.log('[Canvas] Excalidraw bundle installed successfully');
+    throw new Error('Bundled Excalidraw package not found. Expected canvas-app/excalidraw-bundle.tgz in app resources or workspace.');
   } catch (e: any) {
     console.error('[Canvas] Failed to install canvas lib:', e);
     sender.send('canvas-install-status', { status: 'error', error: e.message || 'Download failed' });
@@ -15592,7 +15585,7 @@ app.whenReady().then(async () => {
           parsed.toString(),
           {
             headers: {
-              'User-Agent': 'SuperCmd/1.0 (+https://github.com/raycast/extensions)',
+              'User-Agent': 'WUDI/1.0 (+https://github.com/raycast/extensions)',
               Accept: '*/*',
             },
           },

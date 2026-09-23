@@ -327,7 +327,7 @@ export async function exportCanvas(
   const exportData = {
     type: 'excalidraw',
     version: 2,
-    source: 'https://github.com/MdicaL7/SuperCmd',
+    source: 'https://github.com/MdicaL7/WUDI',
     elements: scene.elements,
     appState: scene.appState,
     files: scene.files,

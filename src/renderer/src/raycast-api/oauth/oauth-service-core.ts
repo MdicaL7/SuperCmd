@@ -177,7 +177,15 @@ export class OAuthServiceCore {
       }
 
       const clientId = this.getConfiguredClientId();
-      if (!clientId || !this.options.authorizeUrl || !this.options.scope) return false;
+      if (!clientId) {
+        throw new Error('Missing OAuth client ID. Configure a client ID in extension preferences to authorize.');
+      }
+      if (!this.options.authorizeUrl) {
+        throw new Error('OAuth authorize URL is not configured for this extension.');
+      }
+      if (!this.options.scope) {
+        throw new Error('OAuth scope is not configured for this extension.');
+      }
 
       const request = await this.options.client?.authorizationRequest?.({
         endpoint: this.options.authorizeUrl,

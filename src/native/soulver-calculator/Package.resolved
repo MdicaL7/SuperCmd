@@ -5,7 +5,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/soulverteam/SoulverCore",
       "state" : {
-        "revision" : "2b5d135d7200ee558e3beb84f2aa1d7c4ac207b9",
+        "revision" : "c1b60e306379257222fff013a42c71f428c3afd8",
         "version" : "3.4.0"
       }
     }

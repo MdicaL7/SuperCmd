@@ -91,7 +91,7 @@ function RendererErrorFallback({ error }: { error: Error }) {
         background: 'var(--surface-base, #101113)',
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 600 }}>SuperCmd hit a renderer error</div>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>WUDI hit a renderer error</div>
       <div style={{ fontSize: 12, opacity: 0.75, wordBreak: 'break-word' }}>{error.message}</div>
       <pre
         style={{
@@ -154,9 +154,9 @@ function ChunkLoadFallback({ error }: { error: unknown }) {
         textAlign: 'center',
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 600 }}>Failed to load SuperCmd</div>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>Failed to load WUDI</div>
       <div style={{ fontSize: 12, opacity: 0.7, maxWidth: 420 }}>
-        A required module could not be loaded. This usually means SuperCmd was updated while
+        A required module could not be loaded. This usually means WUDI was updated while
         this window was open. Reloading should fix it.
       </div>
       <div style={{ fontSize: 11, opacity: 0.5, maxWidth: 420, wordBreak: 'break-word' }}>

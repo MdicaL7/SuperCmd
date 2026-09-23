@@ -13,9 +13,9 @@ This document provides a comprehensive audit of all network endpoints, telemetry
 | :--- | :--- | :--- |
 | `https://api.supercmd.sh/*` | Official backend for extensions catalog, popular extensions, extension details, downloads, and OAuth relay | **Completely Removed**. `src/main/extension-api.ts` deleted. Extension registry now resolves directly against GitHub Raycast catalog. |
 | `https://api.aptabase.com` (`A-US-7660732429`) | Aptabase analytics & telemetry SDK (`@aptabase/electron`) tracking app startup and events | **Completely Removed**. Package dependency uninstalled, initialization and event tracking stripped from `main.ts`. |
-| `SuperCmdLabs/*` | GitHub updater feed repository owner | **Strictly Rejected**. `src/main/updater-config.ts` prevents any connection to `SuperCmdLabs`. Only `MdicaL7/SuperCmd` is permitted. |
+| `SuperCmdLabs/*` | GitHub updater feed repository owner | **Strictly Rejected**. `src/main/updater-config.ts` prevents any connection to `SuperCmdLabs`. Feed repository is configured as `MdicaL7/WUDI`. |
 | `.machine-id` telemetry report | Reporting anonymous hardware machine ID during extension install / uninstall | **Completely Removed**. Extension install/uninstall no longer posts telemetry or creates hardware IDs. |
-| `https://supercmd.sh` | Official website listed as `homepage` in `package.json` | **Removed**. `package.json` repository points to `https://github.com/MdicaL7/SuperCmd`. |
+| `https://supercmd.sh` | Official website listed as `homepage` in `package.json` | **Removed**. `package.json` repository points to `https://github.com/MdicaL7/WUDI`. |
 | `https://supercmd-extensions.s3.amazonaws.com` | Remote S3 bucket for Canvas Excalidraw bundle | **Replaced with Local Bundle**. Canvas now unpacks the offline bundle bundled in `canvas-app/excalidraw-bundle.tgz`. |
 
 ---

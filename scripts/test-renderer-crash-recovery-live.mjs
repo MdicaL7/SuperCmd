@@ -8,7 +8,7 @@
 //
 // It's heavier than the pure-logic tests, so it self-skips when Electron can't
 // be launched (e.g. a headless CI box with no display, or
-// SUPERCMD_SKIP_ELECTRON_TESTS=1).
+// WUDI_SKIP_ELECTRON_TESTS=1).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,7 +20,7 @@ import { createRequire } from 'node:module';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const harness = path.join(root, 'scripts/fixtures/crash-recovery-harness.cjs');
 
-function resolveElectronBinary() {
+export function resolveElectronBinary() {
   try {
     // The 'electron' package's main export is the path to the binary.
     const require = createRequire(import.meta.url);
@@ -31,14 +31,42 @@ function resolveElectronBinary() {
   }
 }
 
+/**
+ * Determines whether a failure is strictly an OS permission or sandbox barrier
+ * that warrants skipping in restricted runner environments, vs an unexpected
+ * failure (e.g. ENOENT, syntax error, hang) that must fail the build.
+ */
+export function isExplicitSandboxOrPermissionError(result) {
+  if (!result || result.ok) return false;
+  const combined = `${result.error || ''} ${result.errorCode || ''} ${result.stderr || ''}`;
+  const allowedPatterns = [
+    'EPERM',
+    'EACCES',
+    'Operation not permitted',
+    'Permission denied',
+  ];
+  return allowedPatterns.some((pattern) => combined.includes(pattern));
+}
+
 const electronBin = resolveElectronBinary();
-const shouldSkip = !electronBin
-  || process.env.WUDI_SKIP_ELECTRON_TESTS === '1'
+const shouldSkip =
+  process.env.WUDI_SKIP_ELECTRON_TESTS === '1'
   || process.env.SUPERCMD_SKIP_ELECTRON_TESTS === '1'
   || (process.platform === 'linux' && !process.env.DISPLAY);
 
 function runHarness() {
   return new Promise((resolve) => {
+    if (!electronBin) {
+      resolve({
+        ok: false,
+        error: 'spawn-error: Electron binary not found',
+        errorCode: 'ENOENT',
+        stdout: '',
+        stderr: 'Electron binary resolution returned null',
+      });
+      return;
+    }
+
     // Strip ELECTRON_RUN_AS_NODE — if it leaks in from the parent, Electron runs
     // as plain Node and `require('electron')` yields no app/BrowserWindow.
     const env = { ...process.env, ELECTRON_DISABLE_SECURITY_WARNINGS: '1' };
@@ -59,7 +87,13 @@ function runHarness() {
 
     child.on('error', (err) => {
       clearTimeout(killTimer);
-      resolve({ ok: false, error: 'spawn-error: ' + err.message, stdout, stderr });
+      resolve({
+        ok: false,
+        error: 'spawn-error: ' + err.message,
+        errorCode: err.code,
+        stdout,
+        stderr,
+      });
     });
 
     child.on('close', () => {
@@ -78,17 +112,30 @@ function runHarness() {
   });
 }
 
+test('isExplicitSandboxOrPermissionError classification unit tests', () => {
+  // Must skip on explicit permissions / sandbox errors
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, errorCode: 'EPERM' }), true);
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, errorCode: 'EACCES' }), true);
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, stderr: 'spawn: Operation not permitted' }), true);
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, stderr: 'Electron: Permission denied' }), true);
+
+  // Must NOT skip on ENOENT or unexpected bugs
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, errorCode: 'ENOENT', error: 'spawn ENOENT' }), false);
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, error: 'no-result', stderr: '' }), false);
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: false, error: 'bad-result: parse error' }), false);
+  assert.equal(isExplicitSandboxOrPermissionError({ ok: true }), false);
+  assert.equal(isExplicitSandboxOrPermissionError(null), false);
+});
+
 test('Renderer crash recovery (live Electron)', { skip: shouldSkip ? 'Electron not launchable here' : false }, async (t) => {
   const result = await runHarness();
 
-  const isSandboxBlocked = !result.ok && (
-    result.stderr?.includes('Operation not permitted') ||
-    result.stderr?.includes('Permission denied') ||
-    result.error?.includes('spawn-error')
-  );
-  if (isSandboxBlocked) {
-    t.skip('Skipping live Electron test: sandbox permissions prevent spawning Electron app');
-    return;
+  if (!result.ok) {
+    if (isExplicitSandboxOrPermissionError(result)) {
+      t.skip(`Skipping live Electron test: sandbox permissions prevent spawning Electron app (${result.errorCode || result.error})`);
+      return;
+    }
+    assert.fail(`Live Electron harness failed unexpectedly: ${result.error || result.stderr || 'unknown error'}`);
   }
 
   await t.test('the renderer actually crashed', () => {

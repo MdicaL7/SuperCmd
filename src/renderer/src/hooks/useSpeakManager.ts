@@ -114,7 +114,7 @@ export function useSpeakManager({
 
   const speakPortalTarget = useDetachedPortalWindow(showSpeak, {
     name: 'supercmd-speak-window',
-    title: 'SuperCmd Read',
+    title: 'WUDI Read',
     width: 520,
     height: 112,
     anchor: 'top-right',

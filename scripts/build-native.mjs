@@ -1,7 +1,7 @@
-#!/usr/bin/env node
 import { execSync } from 'child_process';
-import { mkdirSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
 import { createRequire } from 'module';
+import * as path from 'path';
 
 const require = createRequire(import.meta.url);
 
@@ -12,6 +12,18 @@ const arch = process.arch;
 
 function run(cmd) {
   execSync(cmd, { stdio: 'inherit' });
+}
+
+function getNodeGypCmd() {
+  const homebrewGyp = '/opt/homebrew/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js';
+  if (existsSync(homebrewGyp)) {
+    return `node "${homebrewGyp}"`;
+  }
+  const localGyp = path.resolve('node_modules/.bin/node-gyp');
+  if (existsSync(localGyp)) {
+    return `"${localGyp}"`;
+  }
+  return 'npx --no-install node-gyp';
 }
 
 const swift = [
@@ -68,9 +80,18 @@ for (const [out, src, frameworks] of swift) {
 if (toolboxOnly) process.exit(0);
 
 // Build native Node addon (native_helpers.node)
+const nodeGypCmd = getNodeGypCmd();
+const pythonBin = existsSync('/usr/bin/python3') ? '--python=/usr/bin/python3' : '';
+const xcodeDevDir = existsSync('/Applications/Xcode.app/Contents/Developer')
+  ? '/Applications/Xcode.app/Contents/Developer'
+  : '';
+const sdkRootEnv = xcodeDevDir
+  ? `DEVELOPER_DIR="${xcodeDevDir}" SDKROOT="$(DEVELOPER_DIR="${xcodeDevDir}" xcrun --sdk macosx --show-sdk-path)" `
+  : '';
 run(
   `cd src/native/native-helpers-addon && ` +
-  `HOME=~/.electron-gyp npx node-gyp rebuild ` +
+  `${sdkRootEnv}` +
+  `HOME=~/.electron-gyp ${nodeGypCmd} rebuild ${pythonBin} ` +
   `--target=${electronVersion} --arch=${arch} ` +
   `--dist-url=https://electronjs.org/headers && ` +
   `cp build/Release/native_helpers.node ../../../dist/native/native_helpers.node`

@@ -10,9 +10,9 @@ export const APP_ID = 'com.mdical7.wudi';
 export const LEGACY_APP_ID = 'com.supercmd.app';
 export const APP_DESCRIPTION = 'WUDI — Local-first productivity toolbox';
 
-export const REPOSITORY_URL = 'https://github.com/MdicaL7/SuperCmd';
+export const REPOSITORY_URL = 'https://github.com/MdicaL7/WUDI';
 export const REPOSITORY_OWNER = 'MdicaL7';
-export const REPOSITORY_NAME = 'SuperCmd';
+export const REPOSITORY_NAME = 'WUDI';
 
 export const PROTOCOL_PRIMARY = 'wudi';
 export const PROTOCOL_LEGACY = 'supercmd';

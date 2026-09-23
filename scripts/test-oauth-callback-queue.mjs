@@ -8,6 +8,7 @@ import { build } from 'esbuild';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bridgePath = path.join(root, 'src/renderer/src/raycast-api/oauth/oauth-bridge.ts');
+const serviceCorePath = path.join(root, 'src/renderer/src/raycast-api/oauth/oauth-service-core.ts');
 let importNonce = 0;
 
 async function importOAuthBridge() {
@@ -22,6 +23,21 @@ async function importOAuthBridge() {
   });
   const code = result.outputFiles[0].text;
   const dataUrl = `data:text/javascript;base64,${Buffer.from(code).toString('base64')}#oauth-${importNonce++}`;
+  return import(dataUrl);
+}
+
+async function importOAuthServiceCore() {
+  const result = await build({
+    entryPoints: [serviceCorePath],
+    bundle: true,
+    write: false,
+    format: 'esm',
+    platform: 'node',
+    target: 'node20',
+    logLevel: 'silent',
+  });
+  const code = result.outputFiles[0].text;
+  const dataUrl = `data:text/javascript;base64,${Buffer.from(code).toString('base64')}#oauth-core-${importNonce++}`;
   return import(dataUrl);
 }
 
@@ -139,3 +155,104 @@ test('OAuth callback bridge ignores malformed and non-OAuth URLs safely', async 
     'non-OAuth URLs should not be retained as callbacks'
   );
 });
+
+test('Case 1 & 2: OAuth callback accepts both wudi:// and supercmd:// protocols', async (t) => {
+  const { bridge, emit } = await loadBridge(t);
+
+  // Case 1: wudi:// protocol
+  const wudiWait = bridge.waitForOAuthCallback('wudi-state', 100);
+  emit('wudi://oauth/callback?state=wudi-state&code=code-wudi');
+  const wudiResult = await wudiWait;
+  assert.equal(wudiResult.state, 'wudi-state');
+  assert.equal(wudiResult.code, 'code-wudi');
+
+  // Case 2: supercmd:// legacy protocol
+  const legacyWait = bridge.waitForOAuthCallback('legacy-state', 100);
+  emit('supercmd://oauth/callback?state=legacy-state&code=code-legacy');
+  const legacyResult = await legacyWait;
+  assert.equal(legacyResult.state, 'legacy-state');
+  assert.equal(legacyResult.code, 'code-legacy');
+});
+
+test('Case 3: Non-WUDI and non-OAuth schemes like http:// are rejected', async (t) => {
+  const { bridge, emit } = await loadBridge(t);
+
+  emit('http://oauth/callback?state=http-state&code=123');
+  emit('https://oauth/callback?state=https-state&code=123');
+  emit('custom://oauth/callback?state=custom-state&code=123');
+
+  await assert.rejects(
+    bridge.waitForOAuthCallback('http-state', 10),
+    /OAuth authorization timed out/,
+    'http:// scheme must not be accepted as OAuth callback'
+  );
+
+  await assert.rejects(
+    bridge.waitForOAuthCallback('https-state', 10),
+    /OAuth authorization timed out/,
+    'https:// scheme must not be accepted as OAuth callback'
+  );
+});
+
+test('Case 4: OAuth callback queue does not double-consume entries', async (t) => {
+  const { bridge, emit } = await loadBridge(t);
+
+  emit('wudi://oauth/callback?state=single-use&code=code-single');
+  const first = await bridge.waitForOAuthCallback('single-use', 100);
+  assert.equal(first.code, 'code-single');
+
+  // Second wait for the same state should time out because the callback has been consumed
+  await assert.rejects(
+    bridge.waitForOAuthCallback('single-use', 10),
+    /OAuth authorization timed out/,
+    'consumed callback must not be reusable'
+  );
+});
+
+test('Case 5: OAuthServiceCore throws explicit actionable error when clientId is missing', async (t) => {
+  const previousWindow = globalThis.window;
+  const previousLocalStorage = globalThis.localStorage;
+
+  globalThis.window = {
+    electron: {
+      oauthSetFlowActive: async () => {},
+    },
+  };
+  globalThis.localStorage = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
+
+  t.after(() => {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+    if (previousLocalStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previousLocalStorage;
+  });
+
+  const { OAuthServiceCore } = await importOAuthServiceCore();
+  const service = new OAuthServiceCore({
+    authorizeUrl: 'https://github.com/login/oauth/authorize',
+    tokenUrl: 'https://github.com/login/oauth/access_token',
+    scope: 'repo read:user',
+    // clientId intentionally omitted
+  });
+
+  await assert.rejects(
+    service.beginAuthorization(),
+    /Missing OAuth client ID\. Configure a client ID in extension preferences to authorize\./,
+    'beginAuthorization must throw explicit actionable error when clientId is missing'
+  );
+
+  await assert.rejects(
+    service.exchangeAuthorizationCode({
+      code: 'test-code',
+      codeVerifier: 'verifier',
+      redirectUri: 'wudi://oauth/callback',
+    }),
+    /Missing OAuth client ID\. Configure a valid client ID and try again\./,
+    'exchangeAuthorizationCode must throw explicit actionable error when clientId is missing'
+  );
+});
+

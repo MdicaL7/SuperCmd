@@ -71,15 +71,15 @@ test('parseGithubRepository extracts owner and repo correctly', () => {
   assert.equal(parseGithubRepository('invalid-url'), null);
 });
 
-test('resolveAppUpdaterFeedConfig resolves user repository MdicaL7/SuperCmd', () => {
+test('resolveAppUpdaterFeedConfig resolves user repository MdicaL7/WUDI', () => {
   const customPkg = {
-    repository: 'https://github.com/MdicaL7/SuperCmd',
+    repository: 'https://github.com/MdicaL7/WUDI',
     build: {
       publish: [
         {
           provider: 'github',
           owner: 'MdicaL7',
-          repo: 'SuperCmd',
+          repo: 'WUDI',
           releaseType: 'release',
         },
       ],
@@ -90,7 +90,7 @@ test('resolveAppUpdaterFeedConfig resolves user repository MdicaL7/SuperCmd', ()
   assert.ok(resolved, 'feed config must be resolved');
   assert.equal(resolved.provider, 'github');
   assert.equal(resolved.owner, 'MdicaL7');
-  assert.equal(resolved.repo, 'SuperCmd');
+  assert.equal(resolved.repo, 'WUDI');
 });
 
 test('resolveAppUpdaterFeedConfig strictly rejects SuperCmdLabs feed', () => {
@@ -112,10 +112,10 @@ test('resolveAppUpdaterFeedConfig strictly rejects SuperCmdLabs feed', () => {
   assert.equal(resolved, null, 'SuperCmdLabs must be rejected by updater');
 });
 
-test('resolveAppUpdaterFeedConfig reads actual package.json and matches MdicaL7/SuperCmd', () => {
+test('resolveAppUpdaterFeedConfig reads actual package.json and matches MdicaL7/WUDI', () => {
   const resolved = resolveAppUpdaterFeedConfig(null, [path.join(root, 'package.json')]);
   assert.ok(resolved, 'must resolve from project package.json');
   assert.equal(resolved.owner, 'MdicaL7');
-  assert.equal(resolved.repo, 'SuperCmd');
+  assert.equal(resolved.repo, 'WUDI');
   assert.notEqual(resolved.owner.toLowerCase(), 'supercmdlabs');
 });
