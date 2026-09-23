@@ -215,7 +215,7 @@ export function registerFileShelf(options: FileShelfOptions): {
       minHeight: 140,
       frame: false,
       transparent: true,
-      hasShadow: true,
+      hasShadow: false,
       backgroundColor: '#00000000',
       alwaysOnTop: store.alwaysOnTop,
       show: false,

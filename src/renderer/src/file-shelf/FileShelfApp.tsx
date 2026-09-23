@@ -142,9 +142,7 @@ export default function FileShelfApp(): React.ReactElement {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => void window.fileShelf.cancelTarget()}
-      >
-        <div className="target-inner-frame" />
-      </main>
+      />
     );
   }
 
