@@ -110,7 +110,7 @@ test('corrupt and unsupported saved data are reported and preserved', async (t) 
 });
 
 async function controllerFixture(t, options = {}) {
-  const { openInitially = true, screenOverrides = {}, childProcessOverride = null } = options;
+  const { openInitially = true, screenOverrides = {}, childProcessOverride = null, gestureConfig = null } = options;
   const f = fixture(t); const windows = []; const handlers = new Map(); const copied = []; const revealed = []; const popups = [];
   const ipcMain = new EventEmitter(); ipcMain.handle = (name, fn) => handlers.set(name, fn); ipcMain.removeHandler = (name) => handlers.delete(name);
   const icon = { isEmpty: () => false, toDataURL: () => 'fixture-icon' };
@@ -145,10 +145,17 @@ async function controllerFixture(t, options = {}) {
   };
   const { registerFileShelf } = await compile('src/main/file-shelf/index.ts', {
     electron,
+    fs: {
+      ...fs,
+      existsSync: (p) => (childProcessOverride && String(p).includes('file-shelf-gesture-monitor')) || fs.existsSync(p),
+    },
     ...(childProcessOverride ? { child_process: childProcessOverride } : {}),
     'clipboard-fixture': { copyFileReferences: async (paths) => copied.push(...paths) },
   });
-  const controller = registerFileShelf({ loadWindowUrl: (window, hash) => { window.hash = hash; } });
+  const controller = registerFileShelf({
+    loadWindowUrl: (window, hash) => { window.hash = hash; },
+    ...(gestureConfig ? { gestureConfig } : {}),
+  });
   t.after(() => controller.dispose());
   const window = windows[0]; window.emit('ready-to-show');
   if (openInitially) controller.open();
@@ -316,4 +323,178 @@ test('gesture monitor lifecycle: unrecoverable exit code 2 stops restarting, dis
   await f.invoke('set-shake-to-activate', false);
   assert.equal(killed, 1, 'disabling shake kills process');
 });
+
+test('gesture monitor lifecycle: exit(1) automatically triggers exponential backoff restart', async (t) => {
+  let spawned = 0;
+  const children = [];
+
+  class MockChildProcess extends EventEmitter {
+    constructor() {
+      super();
+      spawned += 1;
+      this.stdout = new EventEmitter();
+      children.push(this);
+    }
+    kill() {
+      this.emit('exit', 0, 'SIGTERM');
+    }
+  }
+
+  const mockChildProcess = {
+    spawn: () => new MockChildProcess(),
+  };
+
+  const f = await controllerFixture(t, {
+    childProcessOverride: mockChildProcess,
+    gestureConfig: { baseRestartMs: 15, maxRestartMs: 100 },
+  });
+  assert.equal(spawned, 1, 'started on launch');
+
+  // Recoverable crash: exit with code 1
+  children[0].emit('exit', 1, null);
+
+  // Wait for restart timer to fire (base delay 15ms)
+  for (let i = 0; i < 40 && spawned < 2; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.equal(spawned, 2, 'recoverable exit(1) automatically restarted monitor');
+});
+
+test('gesture monitor lifecycle: rapid crash after ready increases backoff delay instead of looping at 2s', async (t) => {
+  let spawned = 0;
+  const children = [];
+
+  class MockChildProcess extends EventEmitter {
+    constructor() {
+      super();
+      spawned += 1;
+      this.stdout = new EventEmitter();
+      children.push(this);
+    }
+    kill() {
+      this.emit('exit', 0, 'SIGTERM');
+    }
+  }
+
+  const mockChildProcess = {
+    spawn: () => new MockChildProcess(),
+  };
+
+  const f = await controllerFixture(t, {
+    childProcessOverride: mockChildProcess,
+    gestureConfig: { baseRestartMs: 20, maxRestartMs: 500, healthyThresholdMs: 200 },
+  });
+  assert.equal(spawned, 1);
+
+  // Crash 1: emit ready then crash immediately (<200ms)
+  children[0].stdout.emit('data', JSON.stringify({ type: 'ready' }) + '\n');
+  children[0].emit('exit', 1, null);
+
+  // Wait for 2nd spawn (expected delay ~20ms)
+  for (let i = 0; i < 40 && spawned < 2; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.equal(spawned, 2, 'spawned 2nd helper');
+
+  // Crash 2: emit ready then crash immediately (<200ms)
+  children[1].stdout.emit('data', JSON.stringify({ type: 'ready' }) + '\n');
+  children[1].emit('exit', 1, null);
+
+  // 2nd crash backoff delay is 20 * 2^1 = 40ms.
+  // At 15ms, it should not have spawned yet
+  await new Promise((resolve) => setTimeout(resolve, 15));
+  assert.equal(spawned, 2, 'backoff increased: did not restart immediately at base delay');
+
+  // Wait for 3rd spawn (should spawn around ~40-60ms)
+  for (let i = 0; i < 40 && spawned < 3; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.equal(spawned, 3, 'spawned 3rd helper with increased backoff');
+});
+
+test('gesture monitor lifecycle: disable -> immediately enable preserves new child against delayed old child exit', async (t) => {
+  let spawned = 0;
+  const children = [];
+
+  class MockChildProcess extends EventEmitter {
+    constructor() {
+      super();
+      spawned += 1;
+      this.killed = false;
+      this.stdout = new EventEmitter();
+      children.push(this);
+    }
+    kill() {
+      this.killed = true;
+      // Asynchronous exit
+      setTimeout(() => {
+        this.emit('exit', 0, 'SIGTERM');
+      }, 25);
+    }
+  }
+
+  const mockChildProcess = {
+    spawn: () => new MockChildProcess(),
+  };
+
+  const f = await controllerFixture(t, { childProcessOverride: mockChildProcess });
+  assert.equal(spawned, 1);
+  const childA = children[0];
+
+  // Disable shake -> kills childA asynchronously
+  await f.invoke('set-shake-to-activate', false);
+  assert.equal(childA.killed, true, 'childA killed');
+
+  // Immediately re-enable shake -> spawns childB
+  await f.invoke('set-shake-to-activate', true);
+  assert.equal(spawned, 2, 'childB spawned');
+  const childB = children[1];
+
+  // Wait 50ms for childA's async exit to fire
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  // ChildB should still be the active process.
+  // If childA's exit mistakenly wiped gestureProcess, disabling shake would NOT kill childB.
+  assert.equal(childB.killed, false, 'childB is still alive');
+  await f.invoke('set-shake-to-activate', false);
+  assert.equal(childB.killed, true, 'childB was properly tracked and killed, not wiped by stale exit');
+});
+
+test('gesture monitor lifecycle: spawn emits error without crashing main process and recovers cleanly', async (t) => {
+  let spawned = 0;
+  const children = [];
+
+  class MockChildProcess extends EventEmitter {
+    constructor() {
+      super();
+      spawned += 1;
+      this.stdout = new EventEmitter();
+      children.push(this);
+    }
+    kill() {
+      this.emit('exit', 0, 'SIGTERM');
+    }
+  }
+
+  const mockChildProcess = {
+    spawn: () => new MockChildProcess(),
+  };
+
+  const f = await controllerFixture(t, {
+    childProcessOverride: mockChildProcess,
+    gestureConfig: { baseRestartMs: 15, maxRestartMs: 100 },
+  });
+  assert.equal(spawned, 1);
+
+  // ChildProcess emits 'error' (e.g. EACCES or ENOENT) followed by close/exit
+  children[0].emit('error', new Error('spawn EACCES'));
+  children[0].emit('exit', 1, null);
+
+  // Verify process does not crash and restarts helper cleanly
+  for (let i = 0; i < 40 && spawned < 2; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.equal(spawned, 2, 'restarted successfully after child process error');
+});
+
 

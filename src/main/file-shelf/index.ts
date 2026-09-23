@@ -8,8 +8,17 @@ import type { FileShelfBounds, FileShelfMode, FileShelfResult, FileShelfSnapshot
 import { FileShelfStore } from './store';
 import { copyFileReferences } from './file-clipboard';
 
+interface GestureConfig {
+  baseRestartMs?: number;
+  maxRestartMs?: number;
+  maxRestartAttempts?: number;
+  healthyThresholdMs?: number;
+  degradedRestartMs?: number;
+}
+
 interface FileShelfOptions {
   loadWindowUrl: (window: BrowserWindow, hash: string) => void;
+  gestureConfig?: GestureConfig;
 }
 
 const channelNames = [
@@ -34,12 +43,16 @@ export function registerFileShelf(options: FileShelfOptions): {
   let gestureProcess: ChildProcess | null = null;
   let gestureDisposed = false;
   let gestureRestartTimer: ReturnType<typeof setTimeout> | null = null;
+  let gestureHealthyTimer: ReturnType<typeof setTimeout> | null = null;
   let gestureRestartAttempts = 0;
   let gestureFatalError = false;
+  let gestureGeneration = 0;
 
-  const GESTURE_MAX_RESTART_ATTEMPTS = 5;
-  const GESTURE_RESTART_BASE_MS = 2000;
-  const GESTURE_RESTART_MAX_MS = 30_000;
+  const GESTURE_MAX_RESTART_ATTEMPTS = options.gestureConfig?.maxRestartAttempts ?? 5;
+  const GESTURE_RESTART_BASE_MS = options.gestureConfig?.baseRestartMs ?? 2000;
+  const GESTURE_RESTART_MAX_MS = options.gestureConfig?.maxRestartMs ?? 30_000;
+  const GESTURE_HEALTHY_THRESHOLD_MS = options.gestureConfig?.healthyThresholdMs ?? 30_000;
+  const GESTURE_DEGRADED_RESTART_MS = options.gestureConfig?.degradedRestartMs ?? 5 * 60 * 1000;
 
   const iconCache = new Map<string, NativeImage>();
   const pendingIcons = new Set<string>();
@@ -323,17 +336,22 @@ export function registerFileShelf(options: FileShelfOptions): {
       return;
     }
 
-    if (gestureRestartAttempts >= GESTURE_MAX_RESTART_ATTEMPTS) {
-      console.warn('[FileShelf] Gesture monitor restart limit reached; giving up until next app launch.');
-      return;
+    if (gestureRestartTimer) {
+      clearTimeout(gestureRestartTimer);
+      gestureRestartTimer = null;
     }
 
-    const delay = Math.min(
-      GESTURE_RESTART_BASE_MS * 2 ** gestureRestartAttempts,
-      GESTURE_RESTART_MAX_MS,
-    );
-
-    gestureRestartAttempts += 1;
+    let delay: number;
+    if (gestureRestartAttempts >= GESTURE_MAX_RESTART_ATTEMPTS) {
+      console.warn('[FileShelf] Gesture monitor restart limit reached; entering degraded retry mode (every 5m).');
+      delay = GESTURE_DEGRADED_RESTART_MS;
+    } else {
+      delay = Math.min(
+        GESTURE_RESTART_BASE_MS * 2 ** gestureRestartAttempts,
+        GESTURE_RESTART_MAX_MS,
+      );
+      gestureRestartAttempts += 1;
+    }
 
     gestureRestartTimer = setTimeout(() => {
       gestureRestartTimer = null;
@@ -342,14 +360,34 @@ export function registerFileShelf(options: FileShelfOptions): {
   };
 
   const startGestureMonitor = () => {
-    if (process.platform !== 'darwin' || gestureDisposed || !store.shakeToActivate || gestureFatalError) return;
+    if (
+      process.platform !== 'darwin'
+      || gestureDisposed
+      || quitting
+      || !store.shakeToActivate
+      || gestureFatalError
+      || gestureProcess
+    ) {
+      return;
+    }
+
+    if (gestureRestartTimer) {
+      clearTimeout(gestureRestartTimer);
+      gestureRestartTimer = null;
+    }
+
     const helperCandidates = [
       path.join(__dirname, '..', '..', 'native', 'file-shelf-gesture-monitor'),
+      path.join(__dirname, '..', '..', 'dist', 'native', 'file-shelf-gesture-monitor'),
       path.join(__dirname, '..', '..', '..', 'dist', 'native', 'file-shelf-gesture-monitor'),
     ].map((p) => p.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1'));
 
     const helper = helperCandidates.find((candidate) => fs.existsSync(candidate));
     if (!helper) return;
+
+    const generation = ++gestureGeneration;
+    const startedAt = Date.now();
+    let exitedOrErrored = false;
 
     try {
       const child = spawn(helper, [], { stdio: ['pipe', 'pipe', 'pipe'], env: process.env });
@@ -357,6 +395,7 @@ export function registerFileShelf(options: FileShelfOptions): {
       let buffer = '';
 
       child.stdout?.on('data', (chunk: Buffer | string) => {
+        if (generation !== gestureGeneration) return;
         buffer += chunk.toString();
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
@@ -367,8 +406,14 @@ export function registerFileShelf(options: FileShelfOptions): {
             const payload = JSON.parse(trimmed);
 
             if (payload.type === 'ready') {
-              gestureRestartAttempts = 0;
               gestureFatalError = false;
+              if (gestureHealthyTimer) clearTimeout(gestureHealthyTimer);
+              gestureHealthyTimer = setTimeout(() => {
+                gestureHealthyTimer = null;
+                if (generation === gestureGeneration && gestureProcess === child) {
+                  gestureRestartAttempts = 0;
+                }
+              }, GESTURE_HEALTHY_THRESHOLD_MS);
               continue;
             }
 
@@ -397,21 +442,65 @@ export function registerFileShelf(options: FileShelfOptions): {
         }
       });
 
-      child.on('exit', (code, signal) => {
-        gestureProcess = null;
-        if (gestureDisposed || quitting) {
+      child.on('error', (error) => {
+        console.warn('[FileShelf] Gesture monitor process error:', error);
+        if (gestureHealthyTimer) {
+          clearTimeout(gestureHealthyTimer);
+          gestureHealthyTimer = null;
+        }
+
+        if (gestureProcess === child) {
+          gestureProcess = null;
+        }
+
+        if (generation !== gestureGeneration || gestureDisposed || quitting) {
           return;
+        }
+
+        if (!exitedOrErrored) {
+          exitedOrErrored = true;
+          scheduleGestureRestart();
+        }
+      });
+
+      child.on('exit', (code, signal) => {
+        if (gestureHealthyTimer) {
+          clearTimeout(gestureHealthyTimer);
+          gestureHealthyTimer = null;
+        }
+
+        if (gestureProcess === child) {
+          gestureProcess = null;
+        }
+
+        if (generation !== gestureGeneration || gestureDisposed || quitting) {
+          return;
+        }
+
+        const uptime = Date.now() - startedAt;
+        if (uptime >= GESTURE_HEALTHY_THRESHOLD_MS) {
+          gestureRestartAttempts = 0;
         }
 
         // Swift helper exits with code 2 on permission / event tap failure
         if (code === 2 || gestureFatalError) {
+          gestureFatalError = true;
           console.warn(`[FileShelf] Gesture monitor stopped due to non-recoverable startup error (${code ?? signal}).`);
           return;
         }
 
-        scheduleGestureRestart();
+        if (!exitedOrErrored) {
+          exitedOrErrored = true;
+          scheduleGestureRestart();
+        }
       });
-    } catch {}
+    } catch (error) {
+      console.warn('[FileShelf] Failed to spawn gesture monitor synchronously:', error);
+      if (generation === gestureGeneration) {
+        gestureProcess = null;
+        scheduleGestureRestart();
+      }
+    }
   };
 
   const updateShakeToActivate = async (value: boolean) => {
@@ -419,16 +508,26 @@ export function registerFileShelf(options: FileShelfOptions): {
     if (value) {
       gestureFatalError = false;
       gestureRestartAttempts = 0;
-      if (!gestureProcess) {
-        startGestureMonitor();
-      }
-    } else {
       if (gestureRestartTimer) {
         clearTimeout(gestureRestartTimer);
         gestureRestartTimer = null;
       }
-      gestureProcess?.kill();
+      if (!gestureProcess) {
+        startGestureMonitor();
+      }
+    } else {
+      gestureGeneration += 1;
+      if (gestureRestartTimer) {
+        clearTimeout(gestureRestartTimer);
+        gestureRestartTimer = null;
+      }
+      if (gestureHealthyTimer) {
+        clearTimeout(gestureHealthyTimer);
+        gestureHealthyTimer = null;
+      }
+      const proc = gestureProcess;
       gestureProcess = null;
+      proc?.kill();
     }
     broadcast();
   };
@@ -632,15 +731,21 @@ export function registerFileShelf(options: FileShelfOptions): {
     dispose: () => {
       quitting = true;
       gestureDisposed = true;
+      gestureGeneration += 1;
       if (gestureRestartTimer) {
         clearTimeout(gestureRestartTimer);
         gestureRestartTimer = null;
       }
+      if (gestureHealthyTimer) {
+        clearTimeout(gestureHealthyTimer);
+        gestureHealthyTimer = null;
+      }
       if (dismissTimer) clearTimeout(dismissTimer);
       if (persistTimer) clearTimeout(persistTimer);
       if (gestureProcess) {
-        gestureProcess.kill();
+        const proc = gestureProcess;
         gestureProcess = null;
+        proc.kill();
       }
       for (const name of channelNames) ipcMain.removeHandler(`file-shelf:${name}`);
       ipcMain.removeListener('file-shelf:drag', drag);
