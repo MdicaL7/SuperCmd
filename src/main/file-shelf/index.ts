@@ -33,6 +33,13 @@ export function registerFileShelf(options: FileShelfOptions): {
   let dismissTimer: ReturnType<typeof setTimeout> | null = null;
   let gestureProcess: ChildProcess | null = null;
   let gestureDisposed = false;
+  let gestureRestartTimer: ReturnType<typeof setTimeout> | null = null;
+  let gestureRestartAttempts = 0;
+  let gestureFatalError = false;
+
+  const GESTURE_MAX_RESTART_ATTEMPTS = 5;
+  const GESTURE_RESTART_BASE_MS = 2000;
+  const GESTURE_RESTART_MAX_MS = 30_000;
 
   const iconCache = new Map<string, NativeImage>();
   const pendingIcons = new Set<string>();
@@ -311,14 +318,38 @@ export function registerFileShelf(options: FileShelfOptions): {
     }
   }
 
-  const startGestureMonitor = () => {
-    if (process.platform !== 'darwin' || gestureDisposed) return;
-    const helper = path.join(__dirname, '..', '..', 'native', 'file-shelf-gesture-monitor')
-      .replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
-
-    if (!fs.existsSync(helper)) {
+  const scheduleGestureRestart = () => {
+    if (gestureDisposed || quitting || gestureFatalError || !store.shakeToActivate) {
       return;
     }
+
+    if (gestureRestartAttempts >= GESTURE_MAX_RESTART_ATTEMPTS) {
+      console.warn('[FileShelf] Gesture monitor restart limit reached; giving up until next app launch.');
+      return;
+    }
+
+    const delay = Math.min(
+      GESTURE_RESTART_BASE_MS * 2 ** gestureRestartAttempts,
+      GESTURE_RESTART_MAX_MS,
+    );
+
+    gestureRestartAttempts += 1;
+
+    gestureRestartTimer = setTimeout(() => {
+      gestureRestartTimer = null;
+      startGestureMonitor();
+    }, delay);
+  };
+
+  const startGestureMonitor = () => {
+    if (process.platform !== 'darwin' || gestureDisposed || !store.shakeToActivate || gestureFatalError) return;
+    const helperCandidates = [
+      path.join(__dirname, '..', '..', 'native', 'file-shelf-gesture-monitor'),
+      path.join(__dirname, '..', '..', '..', 'dist', 'native', 'file-shelf-gesture-monitor'),
+    ].map((p) => p.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1'));
+
+    const helper = helperCandidates.find((candidate) => fs.existsSync(candidate));
+    if (!helper) return;
 
     try {
       const child = spawn(helper, [], { stdio: ['pipe', 'pipe', 'pipe'], env: process.env });
@@ -334,6 +365,19 @@ export function registerFileShelf(options: FileShelfOptions): {
           if (!trimmed) continue;
           try {
             const payload = JSON.parse(trimmed);
+
+            if (payload.type === 'ready') {
+              gestureRestartAttempts = 0;
+              gestureFatalError = false;
+              continue;
+            }
+
+            if (payload.type === 'error') {
+              gestureFatalError = true;
+              console.warn('[FileShelf] Gesture monitor unavailable:', payload.message);
+              continue;
+            }
+
             if (payload.type === 'shake') {
               if (store.shakeToActivate) {
                 showTarget({ x: payload.x, y: payload.y });
@@ -353,13 +397,40 @@ export function registerFileShelf(options: FileShelfOptions): {
         }
       });
 
-      child.on('exit', () => {
+      child.on('exit', (code, signal) => {
         gestureProcess = null;
-        if (!gestureDisposed && !quitting) {
-          setTimeout(startGestureMonitor, 2000);
+        if (gestureDisposed || quitting) {
+          return;
         }
+
+        // Swift helper exits with code 2 on permission / event tap failure
+        if (code === 2 || gestureFatalError) {
+          console.warn(`[FileShelf] Gesture monitor stopped due to non-recoverable startup error (${code ?? signal}).`);
+          return;
+        }
+
+        scheduleGestureRestart();
       });
     } catch {}
+  };
+
+  const updateShakeToActivate = async (value: boolean) => {
+    await store.setShakeToActivate(value);
+    if (value) {
+      gestureFatalError = false;
+      gestureRestartAttempts = 0;
+      if (!gestureProcess) {
+        startGestureMonitor();
+      }
+    } else {
+      if (gestureRestartTimer) {
+        clearTimeout(gestureRestartTimer);
+        gestureRestartTimer = null;
+      }
+      gestureProcess?.kill();
+      gestureProcess = null;
+    }
+    broadcast();
   };
 
   const handle = (name: string, handler: (event: IpcMainInvokeEvent, value: any) => unknown) => {
@@ -417,7 +488,7 @@ export function registerFileShelf(options: FileShelfOptions): {
 
   handle('set-shake-to-activate', (_event, value: unknown) => run(async () => {
     if (typeof value !== 'boolean') throw new Error('Invalid preference.');
-    await store.setShakeToActivate(value);
+    await updateShakeToActivate(value);
   }));
 
   handle('show-context-menu', (_event, itemId: unknown) => {
@@ -496,7 +567,7 @@ export function registerFileShelf(options: FileShelfOptions): {
         type: 'checkbox',
         checked: store.shakeToActivate,
         click: (menuItem) => {
-          void run(() => store.setShakeToActivate(menuItem.checked));
+          void run(() => updateShakeToActivate(menuItem.checked));
         },
       },
       { type: 'separator' },
@@ -551,7 +622,9 @@ export function registerFileShelf(options: FileShelfOptions): {
 
   // Prewarm window on creation
   prewarm();
-  startGestureMonitor();
+  if (store.shakeToActivate) {
+    startGestureMonitor();
+  }
 
   return {
     open,
@@ -559,6 +632,10 @@ export function registerFileShelf(options: FileShelfOptions): {
     dispose: () => {
       quitting = true;
       gestureDisposed = true;
+      if (gestureRestartTimer) {
+        clearTimeout(gestureRestartTimer);
+        gestureRestartTimer = null;
+      }
       if (dismissTimer) clearTimeout(dismissTimer);
       if (persistTimer) clearTimeout(persistTimer);
       if (gestureProcess) {

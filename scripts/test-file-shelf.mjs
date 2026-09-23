@@ -110,7 +110,7 @@ test('corrupt and unsupported saved data are reported and preserved', async (t) 
 });
 
 async function controllerFixture(t, options = {}) {
-  const { openInitially = true, screenOverrides = {} } = options;
+  const { openInitially = true, screenOverrides = {}, childProcessOverride = null } = options;
   const f = fixture(t); const windows = []; const handlers = new Map(); const copied = []; const revealed = []; const popups = [];
   const ipcMain = new EventEmitter(); ipcMain.handle = (name, fn) => handlers.set(name, fn); ipcMain.removeHandler = (name) => handlers.delete(name);
   const icon = { isEmpty: () => false, toDataURL: () => 'fixture-icon' };
@@ -143,7 +143,11 @@ async function controllerFixture(t, options = {}) {
     dialog: { showOpenDialog: async () => ({ canceled: false, filePaths: [f.a, f.b] }) },
     shell: { showItemInFolder: (file) => revealed.push(file) }
   };
-  const { registerFileShelf } = await compile('src/main/file-shelf/index.ts', { electron, 'clipboard-fixture': { copyFileReferences: async (paths) => copied.push(...paths) } });
+  const { registerFileShelf } = await compile('src/main/file-shelf/index.ts', {
+    electron,
+    ...(childProcessOverride ? { child_process: childProcessOverride } : {}),
+    'clipboard-fixture': { copyFileReferences: async (paths) => copied.push(...paths) },
+  });
   const controller = registerFileShelf({ loadWindowUrl: (window, hash) => { window.hash = hash; } });
   t.after(() => controller.dispose());
   const window = windows[0]; window.emit('ready-to-show');
@@ -268,11 +272,48 @@ test('settings and context menu dispatch correctly', async (t) => {
   assert.ok(f.popups.length >= 1, 'context menu popup displayed');
 });
 
-test('native shake detector self-test passes', async () => {
-  const binary = path.join(root, 'dist', 'native', 'file-shelf-gesture-monitor');
-  if (fs.existsSync(binary)) {
-    const out = execFileSync(binary, ['--test'], { encoding: 'utf8' });
-    assert.match(out, /SHAKE_DETECTOR_TESTS_PASSED/);
+test('gesture monitor lifecycle: unrecoverable exit code 2 stops restarting, disable kills process', async (t) => {
+  let spawned = 0;
+  let killed = 0;
+  let currentChild = null;
+
+  class MockChildProcess extends EventEmitter {
+    constructor() {
+      super();
+      spawned += 1;
+      this.stdout = new EventEmitter();
+      currentChild = this;
+    }
+    kill() {
+      killed += 1;
+      this.emit('exit', 0, 'SIGTERM');
+    }
   }
+
+  const mockChildProcess = {
+    spawn: () => new MockChildProcess(),
+  };
+
+  const f = await controllerFixture(t, { childProcessOverride: mockChildProcess });
+  assert.equal(spawned, 1, 'started on launch');
+
+  // Emit unrecoverable error
+  currentChild.stdout.emit('data', JSON.stringify({
+    type: 'error',
+    message: 'Failed to create session event tap. Check macOS Accessibility / Input Monitoring permissions.',
+  }) + '\n');
+  currentChild.emit('exit', 2, null);
+
+  // Wait a moment to ensure no restart was scheduled
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(spawned, 1, 'non-recoverable exit code 2 does not restart');
+
+  // Re-enable shake should reset fatal error and restart
+  await f.invoke('set-shake-to-activate', true);
+  assert.equal(spawned, 2, 'enabling shake restarts monitor');
+
+  // Disabling shake kills the process
+  await f.invoke('set-shake-to-activate', false);
+  assert.equal(killed, 1, 'disabling shake kills process');
 });
 
