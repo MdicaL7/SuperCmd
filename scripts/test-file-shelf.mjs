@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { EventEmitter } from 'node:events';
+import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
@@ -108,29 +109,47 @@ test('corrupt and unsupported saved data are reported and preserved', async (t) 
   }
 });
 
-async function controllerFixture(t) {
-  const f = fixture(t); const windows = []; const handlers = new Map(); const copied = []; const revealed = [];
+async function controllerFixture(t, options = {}) {
+  const { openInitially = true, screenOverrides = {} } = options;
+  const f = fixture(t); const windows = []; const handlers = new Map(); const copied = []; const revealed = []; const popups = [];
   const ipcMain = new EventEmitter(); ipcMain.handle = (name, fn) => handlers.set(name, fn); ipcMain.removeHandler = (name) => handlers.delete(name);
   const icon = { isEmpty: () => false, toDataURL: () => 'fixture-icon' };
   const app = new EventEmitter(); app.getPath = () => f.dir; app.getFileIcon = async () => icon; app.quit = () => { app.quitCount = (app.quitCount || 0) + 1; };
   class BrowserWindow extends EventEmitter {
-    constructor(options) { super(); this.options = options; this.bounds = options; this.visible = false; this.destroyed = false;
+    constructor(opts) { super(); this.options = opts; this.bounds = opts; this.visible = false; this.destroyed = false;
       this.webContents = new EventEmitter(); this.webContents.mainFrame = {}; this.webContents.send = () => {}; this.webContents.setWindowOpenHandler = (fn) => { this.openHandler = fn; }; this.webContents.startDrag = (data) => { this.dragged = data; }; windows.push(this); }
     isDestroyed() { return this.destroyed; } isMinimized() { return false; }
-    show() { this.visible = true; } hide() { this.visible = false; } focus() {}
+    isVisible() { return this.visible; }
+    show() { this.visible = true; } showInactive() { this.visible = true; } hide() { this.visible = false; } focus() {}
+    setBounds(b) { this.bounds = { ...this.bounds, ...b }; }
     setAlwaysOnTop(value) { this.pinned = value; } setVisibleOnAllWorkspaces() {}
     getBounds() { const { x, y, width, height } = this.bounds; return { x, y, width, height }; }
     destroy() { this.destroyed = true; this.emit('closed'); }
   }
-  const electron = { app, ipcMain, BrowserWindow, nativeImage: { createFromBitmap: () => icon },
-    screen: { getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1440, height: 900 } }), getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1440, height: 900 } }), getCursorScreenPoint: () => ({ x: 0, y: 0 }) },
-    dialog: { showOpenDialog: async () => ({ canceled: false, filePaths: [f.a, f.b] }) }, shell: { showItemInFolder: (file) => revealed.push(file) } };
+  const Menu = {
+    buildFromTemplate: (template) => ({
+      template,
+      popup: (opts) => popups.push({ opts, template }),
+    }),
+  };
+  const defaultScreen = {
+    getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1440, height: 900 } }),
+    getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1440, height: 900 } }),
+    getCursorScreenPoint: () => ({ x: 0, y: 0 })
+  };
+  const electron = {
+    app, ipcMain, BrowserWindow, Menu, nativeImage: { createFromBitmap: () => icon },
+    screen: { ...defaultScreen, ...screenOverrides },
+    dialog: { showOpenDialog: async () => ({ canceled: false, filePaths: [f.a, f.b] }) },
+    shell: { showItemInFolder: (file) => revealed.push(file) }
+  };
   const { registerFileShelf } = await compile('src/main/file-shelf/index.ts', { electron, 'clipboard-fixture': { copyFileReferences: async (paths) => copied.push(...paths) } });
   const controller = registerFileShelf({ loadWindowUrl: (window, hash) => { window.hash = hash; } });
   t.after(() => controller.dispose());
-  controller.open(); const window = windows[0]; window.emit('ready-to-show');
+  const window = windows[0]; window.emit('ready-to-show');
+  if (openInitially) controller.open();
   const event = { sender: window.webContents, senderFrame: window.webContents.mainFrame };
-  return { ...f, app, controller, windows, window, handlers, ipcMain, event, copied, revealed,
+  return { ...f, app, controller, windows, window, handlers, ipcMain, event, copied, revealed, popups,
     invoke: (name, value, source = event) => handlers.get(`file-shelf:${name}`)(source, value) };
 }
 
@@ -169,3 +188,91 @@ test('IPC rejects unrelated windows/frames and transfer operations accept regist
   assert.equal((await f.invoke('reveal', ids[0])).ok, false); assert.equal(f.revealed.length, 1);
   assert.equal(f.window.openHandler().action, 'deny');
 });
+
+test('prewarm lifecycle creates hidden instance without popping up on desktop', async (t) => {
+  const f = await controllerFixture(t, { openInitially: false });
+  assert.equal(f.windows.length, 1, 'window prewarmed on controller creation');
+  assert.equal(f.window.visible, false, 'prewarmed window remains hidden on creation');
+  assert.equal(f.window.hash, '/file-shelf');
+  assert.equal(f.controller.getMode(), 'shelf');
+});
+
+test('state transitions: hidden -> drop target -> shelf -> toggle hide/show', async (t) => {
+  const f = await controllerFixture(t, { openInitially: false });
+  assert.equal(f.window.visible, false);
+
+  // Transition 1: Hidden -> Drop Target via shake/gesture
+  f.controller.showTarget({ x: 300, y: 400 });
+  assert.equal(f.window.visible, true);
+  assert.equal(f.controller.getMode(), 'target');
+  assert.equal(f.window.bounds.width, 180);
+  assert.equal(f.window.bounds.height, 130);
+  assert.equal(f.invoke('get-state').mode, 'target');
+
+  // Transition 2: Drop Target -> Shelf on file drop
+  const addResult = await f.invoke('add', [f.a]);
+  assert.equal(addResult.ok, true);
+  assert.equal(f.controller.getMode(), 'shelf');
+  assert.equal(f.window.visible, true);
+  assert.equal(f.invoke('get-state').mode, 'shelf');
+  assert.ok(f.window.bounds.width >= 280, 'bounds morphed to shelf size');
+
+  // Transition 3: Cancel / hide
+  await f.invoke('cancel-target');
+  assert.equal(f.window.visible, false);
+
+  // Transition 4: Launcher toggle (open -> hide -> open)
+  f.controller.open();
+  assert.equal(f.window.visible, true);
+  assert.equal(f.controller.getMode(), 'shelf');
+  f.controller.open();
+  assert.equal(f.window.visible, false, 'second open call toggles off');
+});
+
+test('bounds clamping and multi-display coordinate support', async (t) => {
+  const f = await controllerFixture(t, { openInitially: false });
+
+  // Test edge clamping near bottom-right on 1440x900 display
+  f.controller.showTarget({ x: 1430, y: 890 });
+  const bounds = f.window.bounds;
+  assert.ok(bounds.x + bounds.width <= 1440, 'x clamped within display width');
+  assert.ok(bounds.y + bounds.height <= 900, 'y clamped within display height');
+  assert.ok(bounds.x >= 0 && bounds.y >= 0);
+
+  // Test secondary display with negative coordinates (-1920 to 0)
+  const f2 = await controllerFixture(t, {
+    openInitially: false,
+    screenOverrides: {
+      getDisplayNearestPoint: () => ({ workArea: { x: -1920, y: 0, width: 1920, height: 1080 } }),
+    },
+  });
+  f2.controller.showTarget({ x: -400, y: 300 });
+  const negBounds = f2.window.bounds;
+  assert.ok(negBounds.x >= -1920, 'negative x coordinates handled');
+  assert.ok(negBounds.x + negBounds.width <= 0, 'stay within secondary monitor bounds');
+});
+
+test('settings and context menu dispatch correctly', async (t) => {
+  const f = await controllerFixture(t);
+  const state = f.invoke('get-state');
+  assert.equal(state.shakeToActivate, true, 'shake to activate enabled by default');
+
+  await f.invoke('set-shake-to-activate', false);
+  assert.equal(f.invoke('get-state').shakeToActivate, false);
+
+  await f.invoke('set-shake-to-activate', true);
+  assert.equal(f.invoke('get-state').shakeToActivate, true);
+
+  // Background context menu
+  f.invoke('show-context-menu');
+  assert.ok(f.popups.length >= 1, 'context menu popup displayed');
+});
+
+test('native shake detector self-test passes', async () => {
+  const binary = path.join(root, 'dist', 'native', 'file-shelf-gesture-monitor');
+  if (fs.existsSync(binary)) {
+    const out = execFileSync(binary, ['--test'], { encoding: 'utf8' });
+    assert.match(out, /SHAKE_DETECTOR_TESTS_PASSED/);
+  }
+});
+

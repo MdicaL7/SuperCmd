@@ -21,6 +21,8 @@ const swift = [
     '-framework Foundation -framework ApplicationServices -framework AppKit'],
   ['dist/native/file-shelf-clipboard', 'src/native/file-shelf-clipboard.swift',
     '-framework AppKit -framework Foundation'],
+  ['dist/native/file-shelf-gesture-monitor', 'src/native/file-shelf-gesture-monitor.swift',
+    '-framework AppKit -framework Foundation -framework CoreGraphics'],
   ['dist/native/color-picker', 'src/native/color-picker.swift',
     '-framework AppKit'],
   ['dist/native/keyboard-lock', 'src/native/keyboard-lock.swift',
@@ -54,11 +56,12 @@ const swift = [
     '-framework AVFoundation -framework Foundation'],
 ];
 
+mkdirSync('.tmp/swift-cache', { recursive: true });
 const toolboxOnly = process.argv.includes('--toolbox-only');
-const toolboxHelpers = new Set(['screenshot-ocr', 'translation-selected-text', 'file-shelf-clipboard']);
+const toolboxHelpers = new Set(['screenshot-ocr', 'translation-selected-text', 'file-shelf-clipboard', 'file-shelf-gesture-monitor']);
 for (const [out, src, frameworks] of swift) {
   if (toolboxOnly && !toolboxHelpers.has(out.split('/').pop())) continue;
-  run(`swiftc -O -o ${out} ${src} ${frameworks}`);
+  run(`swiftc -module-cache-path .tmp/swift-cache -O -o ${out} ${src} ${frameworks}`);
 }
 
 // The toolbox has no model downloads or native Node addon dependency.

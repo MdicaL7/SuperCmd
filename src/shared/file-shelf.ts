@@ -19,9 +19,13 @@ export interface FileShelfBounds {
   height: number;
 }
 
+export type FileShelfMode = 'target' | 'shelf';
+
 export interface FileShelfSnapshot {
   items: FileShelfItem[];
   alwaysOnTop: boolean;
+  mode: FileShelfMode;
+  shakeToActivate?: boolean;
   error?: string;
 }
 
@@ -44,6 +48,9 @@ export interface FileShelfAPI {
   startDrag(ids: string[]): void;
   reveal(id: string): Promise<FileShelfResult>;
   setAlwaysOnTop(value: boolean): Promise<FileShelfResult>;
+  setShakeToActivate(value: boolean): Promise<FileShelfResult>;
+  showContextMenu(id?: string): Promise<void>;
+  cancelTarget(): Promise<void>;
   hide(): Promise<void>;
   onChanged(callback: (snapshot: FileShelfSnapshot) => void): () => void;
   onError(callback: (message: string) => void): () => void;

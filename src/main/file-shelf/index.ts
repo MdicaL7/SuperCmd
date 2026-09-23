@@ -1,7 +1,10 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, screen, shell } from 'electron';
 import type { Event, IpcMainEvent, IpcMainInvokeEvent, NativeImage } from 'electron';
+import { spawn } from 'child_process';
+import type { ChildProcess } from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
-import type { FileShelfBounds, FileShelfResult, FileShelfSnapshot } from '../../shared/file-shelf';
+import type { FileShelfBounds, FileShelfMode, FileShelfResult, FileShelfSnapshot } from '../../shared/file-shelf';
 import { FileShelfStore } from './store';
 import { copyFileReferences } from './file-clipboard';
 
@@ -9,13 +12,28 @@ interface FileShelfOptions {
   loadWindowUrl: (window: BrowserWindow, hash: string) => void;
 }
 
-const channelNames = ['get-state', 'add', 'choose', 'remove', 'clear', 'copy', 'reveal', 'set-always-on-top', 'hide'];
+const channelNames = [
+  'get-state', 'add', 'choose', 'remove', 'clear', 'copy', 'reveal',
+  'set-always-on-top', 'set-shake-to-activate', 'show-context-menu',
+  'cancel-target', 'hide',
+];
 
-export function registerFileShelf(options: FileShelfOptions): { open(): void; dispose(): void } {
+export function registerFileShelf(options: FileShelfOptions): {
+  open(): void;
+  hide(): void;
+  dispose(): void;
+  getMode(): FileShelfMode;
+  showTarget(cursor?: { x: number; y: number }): void;
+} {
   const store = new FileShelfStore(path.join(app.getPath('userData'), 'file-shelf', 'shelf.json'));
   let window: BrowserWindow | null = null;
+  let currentMode: FileShelfMode = 'shelf';
   let quitting = false;
   let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  let dismissTimer: ReturnType<typeof setTimeout> | null = null;
+  let gestureProcess: ChildProcess | null = null;
+  let gestureDisposed = false;
+
   const iconCache = new Map<string, NativeImage>();
   const pendingIcons = new Set<string>();
   const pixels = Buffer.alloc(32 * 32 * 4);
@@ -27,28 +45,44 @@ export function registerFileShelf(options: FileShelfOptions): { open(): void; di
   const trusted = (event: IpcMainEvent | IpcMainInvokeEvent): boolean => Boolean(
     window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === event.sender.mainFrame,
   );
+
   const reportError = (error: unknown) => {
-    if (window && !window.isDestroyed()) window.webContents.send('file-shelf:error', error instanceof Error ? error.message : String(error));
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('file-shelf:error', error instanceof Error ? error.message : String(error));
+    }
   };
+
   const snapshot = (): FileShelfSnapshot => ({
     items: store.getItems().map((item) => ({ ...item, iconDataUrl: iconCache.get(item.path)?.toDataURL() })),
     alwaysOnTop: store.alwaysOnTop,
+    shakeToActivate: store.shakeToActivate,
+    mode: currentMode,
     ...(store.error ? { error: store.error } : {}),
   });
+
   const broadcast = () => {
-    if (window && !window.isDestroyed()) window.webContents.send('file-shelf:changed', snapshot());
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('file-shelf:changed', snapshot());
+    }
     warmIcons();
   };
+
   const warmIcons = () => {
     const currentPaths = new Set(store.entries.map((entry) => entry.path));
-    for (const cached of iconCache.keys()) if (!currentPaths.has(cached)) iconCache.delete(cached);
+    for (const cached of iconCache.keys()) {
+      if (!currentPaths.has(cached)) iconCache.delete(cached);
+    }
     for (const entry of store.entries) {
       if (iconCache.has(entry.path) || pendingIcons.has(entry.path)) continue;
       pendingIcons.add(entry.path);
       void app.getFileIcon(entry.path, { size: 'normal' }).then((icon) => {
         iconCache.set(entry.path, icon.isEmpty() ? fallbackIcon : icon);
         if (window && !window.isDestroyed()) window.webContents.send('file-shelf:changed', snapshot());
-      }).catch(() => { iconCache.set(entry.path, fallbackIcon); }).finally(() => { pendingIcons.delete(entry.path); });
+      }).catch(() => {
+        iconCache.set(entry.path, fallbackIcon);
+      }).finally(() => {
+        pendingIcons.delete(entry.path);
+      });
     }
   };
 
@@ -65,60 +99,245 @@ export function registerFileShelf(options: FileShelfOptions): { open(): void; di
 
   const saveBounds = async () => {
     if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
-    if (window && !window.isDestroyed()) await store.saveBounds(window.getBounds()).catch(reportError);
+    if (window && !window.isDestroyed() && currentMode === 'shelf') {
+      await store.saveBounds(window.getBounds()).catch(reportError);
+    }
     await store.flush();
   };
+
   const scheduleBounds = () => {
+    if (currentMode !== 'shelf') return;
     if (persistTimer) clearTimeout(persistTimer);
     persistTimer = setTimeout(saveBounds, 250);
   };
+
   const applyPin = () => {
-    if (!window) return;
+    if (!window || window.isDestroyed()) return;
     window.setAlwaysOnTop(store.alwaysOnTop, 'floating');
-    if (process.platform === 'darwin') {
+    if (process.platform === 'darwin' && typeof window.setVisibleOnAllWorkspaces === 'function') {
       window.setVisibleOnAllWorkspaces(store.alwaysOnTop, { visibleOnFullScreen: store.alwaysOnTop });
     }
   };
-  const bounds = (): FileShelfBounds => {
-    const saved = store.bounds;
-    const display = saved ? screen.getDisplayMatching(saved) : screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+
+  const getTargetBounds = (cursorPoint?: { x: number; y: number }): FileShelfBounds => {
+    const pt = cursorPoint || (screen.getCursorScreenPoint ? screen.getCursorScreenPoint() : { x: 0, y: 0 });
+    const display = screen.getDisplayNearestPoint
+      ? screen.getDisplayNearestPoint(pt)
+      : { workArea: { x: 0, y: 0, width: 1440, height: 900 } };
     const area = display.workArea;
-    const width = Math.min(saved?.width || 440, area.width);
-    const height = Math.min(saved?.height || 540, area.height);
-    return {
-      width, height,
-      x: Math.max(area.x, Math.min(saved?.x ?? area.x + area.width - width - 24, area.x + area.width - width)),
-      y: Math.max(area.y, Math.min(saved?.y ?? area.y + 72, area.y + area.height - height)),
-    };
+    const width = 180;
+    const height = 130;
+
+    let x = Math.round(pt.x - width / 2);
+    let y = Math.round(pt.y + 15);
+
+    if (y + height > area.y + area.height) {
+      y = Math.round(pt.y - height - 15);
+    }
+
+    x = Math.max(area.x + 8, Math.min(x, area.x + area.width - width - 8));
+    y = Math.max(area.y + 8, Math.min(y, area.y + area.height - height - 8));
+
+    return { x, y, width, height };
   };
 
-  function open(): void {
-    if (window && !window.isDestroyed()) {
-      if (window.isMinimized()) window.restore();
-      window.show(); window.focus(); broadcast(); return;
+  const getShelfBounds = (itemCount = store.entries.length, referenceBounds?: FileShelfBounds): FileShelfBounds => {
+    let width = 360;
+    let height = 160;
+    if (itemCount === 0) {
+      width = 280; height = 130;
+    } else if (itemCount === 1) {
+      width = 280; height = 110;
+    } else if (itemCount === 2) {
+      width = 340; height = 130;
+    } else if (itemCount <= 4) {
+      width = 360; height = 160;
+    } else {
+      width = 400; height = 200;
     }
+
+    const saved = referenceBounds || store.bounds;
+    const basePoint = saved
+      ? { x: saved.x, y: saved.y }
+      : (screen.getCursorScreenPoint ? screen.getCursorScreenPoint() : { x: 0, y: 0 });
+
+    const display = saved && screen.getDisplayMatching
+      ? screen.getDisplayMatching(saved)
+      : (screen.getDisplayNearestPoint ? screen.getDisplayNearestPoint(basePoint) : { workArea: { x: 0, y: 0, width: 1440, height: 900 } });
+
+    const area = display.workArea;
+    width = Math.min(width, area.width - 16);
+    height = Math.min(height, area.height - 16);
+
+    let x = saved ? saved.x : Math.round(basePoint.x - width / 2);
+    let y = saved ? saved.y : Math.round(basePoint.y + 15);
+
+    x = Math.max(area.x + 8, Math.min(x, area.x + area.width - width - 8));
+    y = Math.max(area.y + 8, Math.min(y, area.y + area.height - height - 8));
+
+    return { x, y, width, height };
+  };
+
+  const updateShelfBounds = () => {
+    if (!window || window.isDestroyed()) return;
+    const bounds = getShelfBounds(store.entries.length, window.getBounds());
+    if (typeof window.setBounds === 'function') {
+      window.setBounds(bounds);
+    }
+  };
+
+  const isWindowVisible = (): boolean => {
+    if (!window || window.isDestroyed()) return false;
+    return typeof window.isVisible === 'function' ? window.isVisible() : Boolean((window as any).visible);
+  };
+
+  function prewarm(): void {
+    if (window && !window.isDestroyed()) return;
+
+    const initialBounds = getTargetBounds();
     window = new BrowserWindow({
-      ...bounds(), minWidth: 360, minHeight: 320,
-      title: 'File Shelf', titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 17 },
-      backgroundColor: '#17191e', alwaysOnTop: store.alwaysOnTop, show: false, fullscreenable: false,
-      webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+      ...initialBounds,
+      minWidth: 160,
+      minHeight: 110,
+      frame: false,
+      transparent: true,
+      hasShadow: true,
+      backgroundColor: '#00000000',
+      alwaysOnTop: store.alwaysOnTop,
+      show: false,
+      focusable: true,
+      acceptFirstMouse: true,
+      fullscreenable: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
     });
+
     applyPin();
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event) => event.preventDefault());
     window.webContents.on('before-input-event', (event, input) => {
       if (input.type === 'keyDown' && (input.key === 'Escape' || ((input.meta || input.control) && input.key.toLowerCase() === 'w'))) {
-        event.preventDefault(); window?.hide(); saveBounds();
+        event.preventDefault();
+        hide();
       }
     });
-    window.on('close', (event) => { if (!quitting) { event.preventDefault(); window?.hide(); saveBounds(); } });
+
+    window.on('close', (event) => {
+      if (!quitting) {
+        event.preventDefault();
+        hide();
+      }
+    });
+
     window.on('closed', () => { window = null; });
     window.on('move', scheduleBounds);
     window.on('resize', scheduleBounds);
     window.on('focus', broadcast);
-    window.once('ready-to-show', () => { window?.show(); warmIcons(); });
+    window.once('ready-to-show', () => { warmIcons(); });
     options.loadWindowUrl(window, '/file-shelf');
   }
+
+  function showTarget(cursorPoint?: { x: number; y: number }): void {
+    if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null; }
+    if (!window || window.isDestroyed()) prewarm();
+    if (!window) return;
+
+    currentMode = 'target';
+    const bounds = getTargetBounds(cursorPoint);
+    if (typeof window.setBounds === 'function') {
+      window.setBounds(bounds);
+    }
+    applyPin();
+    broadcast();
+
+    if (typeof window.showInactive === 'function') {
+      window.showInactive();
+    } else {
+      window.show();
+    }
+  }
+
+  function open(): void {
+    if (!window || window.isDestroyed()) prewarm();
+    if (!window) return;
+
+    if (isWindowVisible() && currentMode === 'shelf') {
+      hide();
+      return;
+    }
+
+    if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null; }
+    currentMode = 'shelf';
+    if (window.isMinimized()) window.restore();
+    updateShelfBounds();
+    applyPin();
+    window.show();
+    window.focus();
+    broadcast();
+  }
+
+  function hide(): void {
+    if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null; }
+    if (window && !window.isDestroyed()) {
+      window.hide();
+      if (currentMode === 'shelf') saveBounds();
+    }
+  }
+
+  const startGestureMonitor = () => {
+    if (process.platform !== 'darwin' || gestureDisposed) return;
+    const helper = path.join(__dirname, '..', '..', 'native', 'file-shelf-gesture-monitor')
+      .replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
+
+    if (!fs.existsSync(helper)) {
+      return;
+    }
+
+    try {
+      const child = spawn(helper, [], { stdio: ['pipe', 'pipe', 'pipe'], env: process.env });
+      gestureProcess = child;
+      let buffer = '';
+
+      child.stdout?.on('data', (chunk: Buffer | string) => {
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const payload = JSON.parse(trimmed);
+            if (payload.type === 'shake') {
+              if (store.shakeToActivate) {
+                showTarget({ x: payload.x, y: payload.y });
+              }
+            } else if (payload.type === 'drag_end') {
+              if (currentMode === 'target' && isWindowVisible()) {
+                if (dismissTimer) clearTimeout(dismissTimer);
+                dismissTimer = setTimeout(() => {
+                  dismissTimer = null;
+                  if (currentMode === 'target' && isWindowVisible()) {
+                    hide();
+                  }
+                }, 250);
+              }
+            }
+          } catch {}
+        }
+      });
+
+      child.on('exit', () => {
+        gestureProcess = null;
+        if (!gestureDisposed && !quitting) {
+          setTimeout(startGestureMonitor, 2000);
+        }
+      });
+    } catch {}
+  };
 
   const handle = (name: string, handler: (event: IpcMainInvokeEvent, value: any) => unknown) => {
     ipcMain.handle(`file-shelf:${name}`, (event, value) => {
@@ -126,58 +345,211 @@ export function registerFileShelf(options: FileShelfOptions): { open(): void; di
       return handler(event, value);
     });
   };
+
   handle('get-state', () => { warmIcons(); return snapshot(); });
-  handle('add', (_event, paths: unknown) => run(() => store.addPaths(paths)));
+
+  handle('add', (_event, paths: unknown) => run(async () => {
+    if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null; }
+    currentMode = 'shelf';
+    const result = await store.addPaths(paths);
+    updateShelfBounds();
+    return result;
+  }));
+
   handle('choose', (_event, kind: unknown) => run(async () => {
     if (kind !== 'files' && kind !== 'folders') throw new Error('Invalid file picker.');
     const chosen = await dialog.showOpenDialog(window!, { properties: [kind === 'files' ? 'openFile' : 'openDirectory', 'multiSelections'] });
-    return chosen.canceled ? { ok: true, cancelled: true } : store.addPaths(chosen.filePaths);
+    if (chosen.canceled) return { ok: true, cancelled: true };
+    currentMode = 'shelf';
+    const result = await store.addPaths(chosen.filePaths);
+    updateShelfBounds();
+    return result;
   }));
-  handle('remove', (_event, ids: unknown) => run(() => store.remove(ids)));
-  handle('clear', () => run(() => store.clear()));
+
+  handle('remove', (_event, ids: unknown) => run(async () => {
+    await store.remove(ids);
+    updateShelfBounds();
+  }));
+
+  handle('clear', () => run(async () => {
+    await store.clear();
+    updateShelfBounds();
+  }));
+
   handle('copy', (_event, ids: unknown) => run(async () => {
     const entries = store.resolveAvailable(ids);
     await copyFileReferences(entries.map((entry) => entry.path));
   }));
+
   handle('reveal', (_event, id: unknown) => run(() => {
     const [entry] = store.resolveAvailable([id]);
     shell.showItemInFolder(entry.path);
   }));
+
   handle('set-always-on-top', (_event, value: unknown) => run(async () => {
     if (typeof value !== 'boolean') throw new Error('Invalid window preference.');
-    await store.setAlwaysOnTop(value); applyPin();
+    await store.setAlwaysOnTop(value);
+    applyPin();
   }));
-  handle('hide', () => { window?.hide(); saveBounds(); });
+
+  handle('set-shake-to-activate', (_event, value: unknown) => run(async () => {
+    if (typeof value !== 'boolean') throw new Error('Invalid preference.');
+    await store.setShakeToActivate(value);
+  }));
+
+  handle('show-context-menu', (_event, itemId: unknown) => {
+    if (!window || window.isDestroyed() || !Menu) return;
+    const isItem = typeof itemId === 'string' && itemId;
+
+    const template: Electron.MenuItemConstructorOptions[] = isItem ? [
+      {
+        label: 'Show in Finder',
+        click: () => {
+          try {
+            const [entry] = store.resolveAvailable([itemId]);
+            shell.showItemInFolder(entry.path);
+          } catch (err) { reportError(err); }
+        },
+      },
+      {
+        label: 'Copy Reference',
+        accelerator: 'CmdOrCtrl+C',
+        click: () => {
+          void run(async () => {
+            const entries = store.resolveAvailable([itemId]);
+            await copyFileReferences(entries.map((e) => e.path));
+          });
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Remove from Shelf',
+        click: () => {
+          void run(async () => {
+            await store.remove([itemId]);
+            updateShelfBounds();
+          });
+        },
+      },
+    ] : [
+      {
+        label: 'Add Files…',
+        click: () => {
+          void run(async () => {
+            const chosen = await dialog.showOpenDialog(window!, { properties: ['openFile', 'multiSelections'] });
+            if (!chosen.canceled) {
+              await store.addPaths(chosen.filePaths);
+              updateShelfBounds();
+            }
+          });
+        },
+      },
+      {
+        label: 'Add Folder…',
+        click: () => {
+          void run(async () => {
+            const chosen = await dialog.showOpenDialog(window!, { properties: ['openDirectory', 'multiSelections'] });
+            if (!chosen.canceled) {
+              await store.addPaths(chosen.filePaths);
+              updateShelfBounds();
+            }
+          });
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Always on Top',
+        type: 'checkbox',
+        checked: store.alwaysOnTop,
+        click: (menuItem) => {
+          void run(async () => {
+            await store.setAlwaysOnTop(menuItem.checked);
+            applyPin();
+          });
+        },
+      },
+      {
+        label: 'Shake to Activate',
+        type: 'checkbox',
+        checked: store.shakeToActivate,
+        click: (menuItem) => {
+          void run(() => store.setShakeToActivate(menuItem.checked));
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Clear Shelf',
+        enabled: store.entries.length > 0,
+        click: () => {
+          void run(async () => {
+            await store.clear();
+            updateShelfBounds();
+          });
+        },
+      },
+      {
+        label: 'Hide Shelf',
+        accelerator: 'Esc',
+        click: () => { hide(); },
+      },
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    menu.popup({ window });
+  });
+
+  handle('cancel-target', () => { hide(); });
+  handle('hide', () => { hide(); });
 
   const drag = (event: IpcMainEvent, ids: unknown) => {
     if (!trusted(event)) return;
     try {
       const entries = store.resolveAvailable(ids);
-      // Electron v41.2.1 drag_util_mac.mm restricts external drag targets to
-      // NSDragOperationCopy. The shelf never offers a move/delete operation.
-      event.sender.startDrag({ file: entries[0].path, files: entries.map((entry) => entry.path), icon: iconCache.get(entries[0].path) || fallbackIcon });
-    } catch (error) { reportError(error); broadcast(); }
+      event.sender.startDrag({
+        file: entries[0].path,
+        files: entries.map((entry) => entry.path),
+        icon: iconCache.get(entries[0].path) || fallbackIcon,
+      });
+    } catch (error) {
+      reportError(error);
+      broadcast();
+    }
   };
+
   ipcMain.on('file-shelf:drag', drag);
+
   const beforeQuit = (event: Event) => {
     if (quitting) return;
-    // Electron does not await event handlers. Finish queued reference/window writes
-    // before allowing the second quit event to close the application.
     event.preventDefault();
     quitting = true;
     void saveBounds().finally(() => app.quit());
   };
   app.on('before-quit', beforeQuit);
 
+  // Prewarm window on creation
+  prewarm();
+  startGestureMonitor();
+
   return {
     open,
+    hide,
     dispose: () => {
       quitting = true;
+      gestureDisposed = true;
+      if (dismissTimer) clearTimeout(dismissTimer);
       if (persistTimer) clearTimeout(persistTimer);
+      if (gestureProcess) {
+        gestureProcess.kill();
+        gestureProcess = null;
+      }
       for (const name of channelNames) ipcMain.removeHandler(`file-shelf:${name}`);
       ipcMain.removeListener('file-shelf:drag', drag);
       app.removeListener('before-quit', beforeQuit);
-      window?.destroy(); window = null; iconCache.clear();
+      window?.destroy();
+      window = null;
+      iconCache.clear();
     },
+    getMode: () => currentMode,
+    showTarget,
   };
 }

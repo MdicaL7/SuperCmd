@@ -8,9 +8,10 @@ interface ShelfDocument {
   items: FileShelfEntry[];
   alwaysOnTop: boolean;
   bounds?: FileShelfBounds;
+  shakeToActivate?: boolean;
 }
 
-const emptyDocument = (): ShelfDocument => ({ version: 1, items: [], alwaysOnTop: true });
+const emptyDocument = (): ShelfDocument => ({ version: 1, items: [], alwaysOnTop: true, shakeToActivate: true });
 
 function isBounds(value: unknown): value is FileShelfBounds {
   if (!value || typeof value !== 'object') return false;
@@ -67,6 +68,7 @@ export class FileShelfStore {
         version: 1,
         items: parsed.items.map((entry) => ({ ...entry, path: path.normalize(entry.path) })),
         alwaysOnTop: parsed.alwaysOnTop,
+        shakeToActivate: typeof parsed.shakeToActivate === 'boolean' ? parsed.shakeToActivate : true,
         ...(isBounds(parsed.bounds) ? { bounds: parsed.bounds } : {}),
       };
     } catch (error) {
@@ -79,6 +81,7 @@ export class FileShelfStore {
 
   get error(): string | undefined { return this.loadError; }
   get alwaysOnTop(): boolean { return this.document.alwaysOnTop; }
+  get shakeToActivate(): boolean { return this.document.shakeToActivate ?? true; }
   get bounds(): FileShelfBounds | undefined { return this.document.bounds ? { ...this.document.bounds } : undefined; }
   get entries(): FileShelfEntry[] { return this.document.items.map((entry) => ({ ...entry })); }
   async flush(): Promise<void> { await this.queue; }
@@ -165,6 +168,7 @@ export class FileShelfStore {
 
   clear(): Promise<void> { return this.mutate(async (draft) => { draft.items = []; }); }
   setAlwaysOnTop(value: boolean): Promise<void> { return this.mutate(async (draft) => { draft.alwaysOnTop = value; }); }
+  setShakeToActivate(value: boolean): Promise<void> { return this.mutate(async (draft) => { draft.shakeToActivate = value; }); }
   saveBounds(bounds: FileShelfBounds): Promise<void> {
     return this.mutate(async (draft) => {
       if (!isBounds(bounds)) throw new Error('Invalid window bounds.');

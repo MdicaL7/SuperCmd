@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const profile = process.env.SUPERCMD_DEV_USER_DATA || path.join(os.tmpdir(), 'supercmd-toolbox-preview-profile');
 if (!path.isAbsolute(profile)) throw new Error('SUPERCMD_DEV_USER_DATA must be an absolute path');
-for (const file of ['dist/main/main.js', 'dist/renderer/index.html', ...['screenshot-ocr', 'translation-selected-text', 'file-shelf-clipboard'].map(name => `dist/native/${name}`)]) {
+for (const file of ['dist/main/main.js', 'dist/renderer/index.html', ...['screenshot-ocr', 'translation-selected-text', 'file-shelf-clipboard', 'file-shelf-gesture-monitor'].map(name => `dist/native/${name}`)]) {
   if (!existsSync(path.join(root, file))) throw new Error(`Missing ${file}. Run build:main, build:renderer and build:toolbox-native first.`);
 }
 const require = createRequire(import.meta.url);

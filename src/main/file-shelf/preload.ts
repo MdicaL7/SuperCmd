@@ -21,6 +21,9 @@ const api: FileShelfAPI = {
   startDrag: (ids) => ipcRenderer.send('file-shelf:drag', ids),
   reveal: (id) => ipcRenderer.invoke('file-shelf:reveal', id),
   setAlwaysOnTop: (value) => ipcRenderer.invoke('file-shelf:set-always-on-top', value),
+  setShakeToActivate: (value) => ipcRenderer.invoke('file-shelf:set-shake-to-activate', value),
+  showContextMenu: (id) => ipcRenderer.invoke('file-shelf:context-menu', id),
+  cancelTarget: () => ipcRenderer.invoke('file-shelf:cancel-target'),
   hide: () => ipcRenderer.invoke('file-shelf:hide'),
   onChanged: (callback) => {
     const listener = (_event: unknown, snapshot: FileShelfSnapshot) => callback(snapshot);
