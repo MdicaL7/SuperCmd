@@ -79,9 +79,9 @@ import {
   setExtensionPreferenceValue,
   setExtensionPreferences,
 } from './extension-preferences-store';
-import { APP_NAME, APP_ID, LEGACY_APP_ID, PROTOCOL_PRIMARY, PROTOCOL_LEGACY } from '../shared/brand';
+import { APP_NAME, APP_ID, LEGACY_APP_ID, PROTOCOL_PRIMARY, PROTOCOL_LEGACY, isSupportedOAuthCallbackUrl } from '../shared/brand';
 import { resolveMenuBarIconPath, resolveAppIconPath } from './brand-assets';
-import { resolveAppUpdaterFeedConfig } from './updater-config';
+import { resolveAppUpdaterFeedConfig, APP_UPDATES_ENABLED } from './updater-config';
 import { getExtensionBundle, buildAllCommands, discoverInstalledExtensionCommands, getInstalledExtensionsSettingsSchema } from './extension-runner';
 import {
   getRendererCrashState,
@@ -7292,17 +7292,8 @@ function handleOAuthCallbackUrl(rawUrl: string): void {
   if (!rawUrl) return;
   console.log('[OAuth] handleOAuthCallbackUrl called with:', rawUrl);
   try {
+    if (!isSupportedOAuthCallbackUrl(rawUrl)) return;
     const parsed = new URL(rawUrl);
-    const isSupportedProtocol =
-      parsed.protocol === 'wudi:' ||
-      parsed.protocol === 'supercmd:';
-    if (!isSupportedProtocol) return;
-    const isOAuthCallback =
-      (parsed.hostname === 'oauth' && parsed.pathname === '/callback') ||
-      parsed.pathname === '/oauth/callback' ||
-      (parsed.hostname === 'auth' && parsed.pathname === '/callback') ||
-      parsed.pathname === '/auth/callback';
-    if (!isOAuthCallback) return;
     // OAuth callback received: release temporary blur suppression immediately.
     clearOAuthBlurHideSuppression();
 
@@ -12951,6 +12942,15 @@ function ensureAppUpdaterConfigured(): void {
     return;
   }
 
+  if (!APP_UPDATES_ENABLED) {
+    updateAppUpdaterStatus({
+      state: 'unsupported',
+      supported: false,
+      message: 'Automatic updates are not configured for this build.',
+    });
+    return;
+  }
+
   try {
     const { autoUpdater } = require('electron-updater');
     appUpdater = autoUpdater;
@@ -13074,7 +13074,7 @@ function ensureAppUpdaterConfigured(): void {
 
 async function checkForAppUpdates(): Promise<AppUpdaterStatusSnapshot> {
   ensureAppUpdaterConfigured();
-  if (!appUpdater) {
+  if (!APP_UPDATES_ENABLED || !appUpdater) {
     return { ...appUpdaterStatusSnapshot };
   }
 
@@ -13110,7 +13110,7 @@ async function checkForAppUpdates(): Promise<AppUpdaterStatusSnapshot> {
 }
 
 async function runBackgroundAppUpdaterCheck(): Promise<void> {
-  if (!app.isPackaged) return;
+  if (!app.isPackaged || !APP_UPDATES_ENABLED) return;
   ensureAppUpdaterConfigured();
   if (!appUpdater || appUpdaterStatusSnapshot.supported === false) return;
 

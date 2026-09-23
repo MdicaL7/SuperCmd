@@ -17,7 +17,7 @@ const LauncherCompactShowMoreRow: React.FC<LauncherCompactShowMoreRowProps> = ({
     onClick={onShowMore}
   >
     <div className="flex items-center gap-2 text-[var(--text-muted)]">
-      <img src={logoSrc} alt="SuperCmd" className="w-4 h-4" />
+      <img src={logoSrc} alt="WUDI" className="w-4 h-4" />
     </div>
     <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
       <span className="text-xs font-medium">{t('launcher.compact.showMore')}</span>

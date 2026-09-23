@@ -281,7 +281,7 @@ const GeneralTab: React.FC = () => {
     if (!updaterStatus) return t('settings.general.updates.defaultMessage');
     switch (updaterStatus.state) {
       case 'unsupported':
-        return t('settings.general.updates.unsupported');
+        return updaterStatus.message || t('settings.general.updates.unsupported');
       case 'checking':
         return t('settings.general.updates.checking');
       case 'available':

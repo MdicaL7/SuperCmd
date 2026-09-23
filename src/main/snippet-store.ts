@@ -466,7 +466,7 @@ export async function exportSnippetsToFile(parentWindow?: BrowserWindow): Promis
   const dialogOptions: SaveDialogOptions = {
     title: 'Export Snippets',
     defaultPath: 'snippets.json',
-    filters: [{ name: 'SuperCmd Snippets', extensions: ['json'] }],
+    filters: [{ name: 'WUDI Snippets', extensions: ['json'] }],
   };
   const result = parentWindow
     ? await dialog.showSaveDialog(parentWindow, dialogOptions)
@@ -477,7 +477,7 @@ export async function exportSnippetsToFile(parentWindow?: BrowserWindow): Promis
   const all = getAllSnippets();
   const exportData: SnippetExportFile = {
     version: 1,
-    app: 'SuperCmd',
+    app: 'WUDI',
     type: 'snippets',
     exportedAt: new Date().toISOString(),
     snippets: all.map((s) => ({
@@ -495,7 +495,10 @@ export async function exportSnippetsToFile(parentWindow?: BrowserWindow): Promis
 export async function importSnippetsFromFile(parentWindow?: BrowserWindow): Promise<{ imported: number; skipped: number }> {
   const dialogOptions: OpenDialogOptions = {
     title: 'Import Snippets',
-    filters: [{ name: 'SuperCmd Snippets', extensions: ['json'] }],
+    filters: [
+      { name: 'WUDI Snippets', extensions: ['json'] },
+      { name: 'SuperCmd Snippets', extensions: ['json'] },
+    ],
     properties: ['openFile'],
   };
   const result = parentWindow

@@ -31,10 +31,21 @@ export function readAppPackageJson(customPaths?: string[]): Record<string, any> 
   return null;
 }
 
+export const APP_UPDATES_ENABLED = false;
+export const UPDATE_PROVIDER = 'github' as const;
+export const UPDATE_OWNER = 'MdicaL7';
+export const UPDATE_REPO = 'WUDI';
+
 export function resolveAppUpdaterFeedConfig(
   pkgInput?: Record<string, any> | null,
-  customPaths?: string[]
+  customPaths?: string[],
+  overrideUpdatesEnabled?: boolean
 ): Record<string, any> | null {
+  const updatesEnabled = overrideUpdatesEnabled ?? APP_UPDATES_ENABLED;
+  if (!updatesEnabled) {
+    return null;
+  }
+
   const pkg = pkgInput || readAppPackageJson(customPaths);
   if (!pkg || typeof pkg !== 'object') return null;
 
@@ -54,15 +65,15 @@ export function resolveAppUpdaterFeedConfig(
     ? (pkg as any).repository
     : String((pkg as any).repository?.url || '');
   const parsedRepo = parseGithubRepository(repositoryRaw);
-  const owner = String((publish as any).owner || parsedRepo?.owner || '').trim();
-  const repo = String((publish as any).repo || parsedRepo?.repo || '').trim();
+  const owner = String((publish as any).owner || parsedRepo?.owner || UPDATE_OWNER).trim();
+  const repo = String((publish as any).repo || parsedRepo?.repo || UPDATE_REPO).trim();
   if (!owner || !repo) {
     return null;
   }
 
-  // Strict guard: Never allow SuperCmdLabs as update source
-  if (owner.toLowerCase() === 'supercmdlabs') {
-    console.error('[Updater] Rejected legacy SuperCmdLabs feed configuration.');
+  // Strict guard: Never allow SuperCmdLabs or legacy SuperCmd as update source
+  if (owner.toLowerCase() === 'supercmdlabs' || repo.toLowerCase() === 'supercmd') {
+    console.error('[Updater] Rejected legacy SuperCmd / SuperCmdLabs feed configuration.');
     return null;
   }
 

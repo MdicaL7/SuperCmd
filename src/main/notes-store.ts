@@ -355,7 +355,7 @@ export async function exportNotesToFile(parentWindow?: BrowserWindow): Promise<b
   const dialogOptions: SaveDialogOptions = {
     title: 'Export Notes',
     defaultPath: 'notes.json',
-    filters: [{ name: 'SuperCmd Notes', extensions: ['json'] }],
+    filters: [{ name: 'WUDI Notes', extensions: ['json'] }],
   };
   const result = parentWindow
     ? await dialog.showSaveDialog(parentWindow, dialogOptions)
@@ -366,7 +366,7 @@ export async function exportNotesToFile(parentWindow?: BrowserWindow): Promise<b
   const all = getAllNotes();
   const exportData: NoteExportFile = {
     version: 1,
-    app: 'SuperCmd',
+    app: 'WUDI',
     type: 'notes',
     exportedAt: new Date().toISOString(),
     notes: all.map((n) => ({

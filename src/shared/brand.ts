@@ -40,3 +40,27 @@ export const WUDI_MENU_BAR_ICON_CANDIDATES = [
   'wudi-tray.png',
   'wudi.svg',
 ];
+
+/**
+ * Validates whether a given URL is a supported OAuth callback URL
+ * under primary 'wudi://' or legacy fallback 'supercmd://'.
+ */
+export function isSupportedOAuthCallbackUrl(rawUrl: string): boolean {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  try {
+    const parsed = new URL(rawUrl);
+    const isSupportedProtocol =
+      parsed.protocol === `${PROTOCOL_PRIMARY}:` ||
+      parsed.protocol === `${PROTOCOL_LEGACY}:`;
+    if (!isSupportedProtocol) return false;
+    const isOAuthCallback =
+      (parsed.hostname === 'oauth' && parsed.pathname === '/callback') ||
+      parsed.pathname === '/oauth/callback' ||
+      (parsed.hostname === 'auth' && parsed.pathname === '/callback') ||
+      parsed.pathname === '/auth/callback';
+    return Boolean(isOAuthCallback);
+  } catch {
+    return false;
+  }
+}
+

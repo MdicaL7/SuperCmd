@@ -27,11 +27,12 @@ function getElectronApp(): any {
 }
 
 export const USER_DATA_MIGRATION_MARKER = '.wudi-migrated-from-supercmd-v1';
+export const USER_DATA_MIGRATION_STATE_FILE = '.wudi-migration-state.json';
 
 export const MIGRATION_FILES = [
   'settings.json',
   'settings.local.json',
-  'location.json',
+  'settings-location.json',
   'window-state.json',
   'notes-window-state.json',
   'safe-storage.json',
@@ -62,7 +63,7 @@ export const MIGRATION_DIRS = [
 
 export interface MigrationResult {
   migrated: boolean;
-  reason?: 'dev_profile' | 'already_migrated' | 'no_source_dir' | 'same_dir' | 'success' | 'error';
+  reason?: 'dev_profile' | 'already_migrated' | 'no_source_dir' | 'same_dir' | 'success' | 'partial' | 'error';
   migratedFiles: string[];
   migratedDirs: string[];
   errors: Array<{ item: string; error: string }>;
@@ -167,8 +168,16 @@ export function maybeMigrateUserDataFromSuperCmd(options?: MigrationOptions): Mi
 
     // 1. Migrate single files
     for (const fileName of MIGRATION_FILES) {
-      const srcFile = path.join(sourceDir, fileName);
+      let srcFile = path.join(sourceDir, fileName);
       const dstFile = path.join(targetDir, fileName);
+
+      // Backward-compatibility: if settings-location.json does not exist in legacy, check location.json
+      if (fileName === 'settings-location.json' && !fs.existsSync(srcFile)) {
+        const legacyLocationFile = path.join(sourceDir, 'location.json');
+        if (fs.existsSync(legacyLocationFile)) {
+          srcFile = legacyLocationFile;
+        }
+      }
 
       try {
         if (fs.existsSync(srcFile) && !fs.existsSync(dstFile)) {
@@ -202,25 +211,57 @@ export function maybeMigrateUserDataFromSuperCmd(options?: MigrationOptions): Mi
       }
     }
 
-    // 3. Write migration marker file
-    const markerRecord = {
-      timestamp: new Date().toISOString(),
-      status: 'migrated',
-      sourceDir,
-      targetDir,
-      migratedFiles: result.migratedFiles,
-      migratedDirs: result.migratedDirs,
-      errors: result.errors,
-    };
+    const stateFilePath = path.join(targetDir, USER_DATA_MIGRATION_STATE_FILE);
 
-    fs.writeFileSync(markerPath, JSON.stringify(markerRecord, null, 2));
+    // 3. Evaluate results and write appropriate marker/state file
+    if (result.errors.length === 0) {
+      const markerRecord = {
+        timestamp: new Date().toISOString(),
+        status: 'migrated',
+        sourceDir,
+        targetDir,
+        migratedFiles: result.migratedFiles,
+        migratedDirs: result.migratedDirs,
+        errors: [],
+      };
 
-    result.migrated = true;
-    result.reason = 'success';
-    console.log(
-      `[UserDataMigration] Completed successfully: ${result.migratedFiles.length} files, ${result.migratedDirs.length} directories migrated.`
-    );
-    return result;
+      fs.writeFileSync(markerPath, JSON.stringify(markerRecord, null, 2));
+
+      // Clean up previous partial state file if it exists
+      try {
+        if (fs.existsSync(stateFilePath)) {
+          fs.unlinkSync(stateFilePath);
+        }
+      } catch {}
+
+      result.migrated = true;
+      result.reason = 'success';
+      console.log(
+        `[UserDataMigration] Completed successfully: ${result.migratedFiles.length} files, ${result.migratedDirs.length} directories migrated.`
+      );
+      return result;
+    } else {
+      // Partial migration failure: record partial state for retry on next boot.
+      // Crucially, DO NOT write completion marker (.wudi-migrated-from-supercmd-v1).
+      const stateRecord = {
+        timestamp: new Date().toISOString(),
+        status: 'partial',
+        sourceDir,
+        targetDir,
+        completedFiles: result.migratedFiles,
+        completedDirs: result.migratedDirs,
+        errors: result.errors,
+      };
+
+      fs.writeFileSync(stateFilePath, JSON.stringify(stateRecord, null, 2));
+
+      result.migrated = false;
+      result.reason = 'partial';
+      console.warn(
+        `[UserDataMigration] Partial migration: ${result.errors.length} errors encountered. Completion marker withheld to permit retry on next startup.`
+      );
+      return result;
+    }
   } catch (globalErr: any) {
     console.error('[UserDataMigration] Unexpected error during migration:', globalErr);
     result.reason = 'error';

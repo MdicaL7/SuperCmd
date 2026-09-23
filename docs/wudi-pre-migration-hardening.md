@@ -100,9 +100,9 @@
 ### Task 8: Extension Store Git 依赖机制与架构权衡说明
 - **架构现状审查**:
   - WUDI 彻底去除了原官方后端 `api.supercmd.sh`，采用“完全开源透明、直连 GitHub”的轻量化架构。
-  - **核心策略**：优先使用 `git clone --filter=blob:none --no-checkout https://github.com/raycast/extensions` 进行极速增量拉取；并在本地持久化 `extension-catalog.json`。
-  - **Fallback 策略**：当检测到用户环境无 `git` 或 git 访问失败时，自动降级至 GitHub Trees REST API (`https://api.github.com/repos/raycast/extensions/git/trees/main`) 与 GitHub Raw (`https://raw.githubusercontent.com/...`)。
-  - **无损体验保障**：得益于 Task 3 的用户数据迁移，已有用户的 `extension-catalog.json` 在初次启动 WUDI 时已被即时还原，首屏浏览 3,200+ 款扩展无需重新经历首次全量拉取。
+  - **全新目录拉取（Catalog Fetching）**：使用 `git clone --filter=blob:none --no-checkout https://github.com/raycast/extensions` + sparse-checkout 进行增量拉取并持久化至 `extension-catalog.json`。全新目录生成依赖系统 Git（因 3000+ 个 package.json 无法通过免鉴权 REST API 逐一请求，否则必然触发 GitHub Rate Limit）。
+  - **无损本地缓存兜底**：得益于用户数据迁移，已有老用户的 `extension-catalog.json` 在初次启动 WUDI 时已无缝还原，无 Git 环境或离线状态仍可即时浏览全部扩展。
+  - **单扩展免 Git 下载（Individual Extension Install Fallback）**：针对具体扩展代码的安装与下载，`downloadExtensionFromTree` 完整支持 GitHub Trees REST API 与 GitHub Raw 下载，无 Git 环境下依然可以安装扩展。
 
 ### Task 9: OAuth 缺少 Client ID 明确报错
 - **Issue**: 当扩展未配置 Client ID 时，`beginAuthorization()` 原先仅返回 `false`，导致外层抛出宽泛的 `"OAuth authorization is required"`，无法指导用户排查。
@@ -137,14 +137,46 @@
 
 ---
 
+## Final Migration Gate Hardening 专题修复
+
+### 1. `settings-location.json` 文件名漏迁修复 (Task 1)
+- **Issue**: 原迁移配置错误记录为 `'location.json'`，导致用户自定义同步路径配置漏迁。
+- **Fix**: 在 `MIGRATION_FILES` 中修正为 `'settings-location.json'`，并保留对历史旧名的向下兼容回退读取。
+
+### 2. 状态机分流与部分迁移安全重试 (Task 2)
+- **Issue**: 原先发生部分文件复制错误时仍写完成标记，导致后续无法自动补迁遗漏文件。
+- **Fix**: 引入完整状态分流（`success` / `partial` / `no_source_dir` / `already_migrated` / `error`）。发生错误时写入 `.wudi-migration-state.json`，且绝对不写 `.wudi-migrated-from-supercmd-v1`；保证目标已存在文件不覆盖、源文件只读，重启时幂等安全补迁缺失项。
+
+### 3. SafeStorage 跨品牌迁移解密与重加密 (Task 3)
+- **Mechanism**: macOS Electron `safeStorage` 的 Keychain 密钥基于 `CFBundleDisplayName` 隔离（`"SuperCmd Safe Storage"` vs `"WUDI Safe Storage"`）。
+- **Fix**: 在 `safe-storage.ts` 中实现基于 Chromium OSCrypt（PBKDF2/AES-128-CBC）的 legacy Keychain 回退解密流程。当 `safeStorage.decryptString` 因 App 身份变化失败时，自动使用 legacy SuperCmd 凭据解密，并用 WUDI safeStorage 重新加密持久化；若解密不可行则保留原密文，绝不置空。日志仅显示 `secret readable: true`，严禁打印密钥值。
+
+### 4. 私有仓库与自动更新架构设计 (Task 4)
+- **Architecture**: 鉴于 `MdicaL7/WUDI` 为私有仓库，匿名客户端无法拉取 release，设置 `APP_UPDATES_ENABLED = false` 干净禁用生产自动更新，Settings UI 友好提示“未配置自动更新”，杜绝 404/鉴权报错；同时集中参数化配置以便未来切换至公开 release 仓库（如 `MdicaL7/WUDI-Releases`）。
+
+### 5. 构建可复现性优化 (Task 6)
+- **Fix**: `scripts/build-native.mjs` 中的 `getNodeGypCmd()` 调整优先级为：本地 `node_modules/.bin/node-gyp` 优先 -> `npx --no-install node-gyp` -> 系统 Homebrew 回退。彻底避免跨机环境冲突。
+
+### 6. SoulverCore 3.4.0 Revision 说明 (Task 7)
+- **Investigation**: 通过 `git ls-remote https://github.com/soulverteam/SoulverCore` 查询确认，远端官方 tag `refs/tags/3.4.0` 对应的正式 commit SHA 即为 `c1b60e306379257222fff013a42c71f428c3afd8`。
+- **Behavior**: SwiftPM 在执行 `swift build` 解析 `from: "3.4.0"` 时，会自动重新检出 tag 3.4.0 的权威 SHA 并刷新 `Package.resolved`。这是 SwiftPM 标准解析行为，并非依赖项升级或漂移。
+
+### 7. 用户可见品牌残留与 OAuth 回调验证 (Tasks 9, 10)
+- 导出/导入对话框过滤名称全面更新为 `WUDI Notes` 与 `WUDI Snippets`。
+- 提取纯函数 `isSupportedOAuthCallbackUrl`，严格验证 `wudi://` 与 `supercmd://` 双协议回调。
+
+---
+
 ## 自动化测试与验证门禁结果
 
 - **i18n 多语言校验**: `npm run check:i18n` -> **PASS**
-- **单元与集成测试套件**: `npm test` -> **139 PASSED, 0 FAILED, 1 SKIPPED (live sandbox)**
+- **单元与集成测试套件**: `npm test` -> **154 PASSED, 0 FAILED, 0 CANCELLED, 0 SKIPPED**
 - **File Shelf 专用测试**: `scripts/test-file-shelf.mjs` -> **16/16 PASSED**
-- **OAuth 回调与 Service 测试**: `scripts/test-oauth-callback-queue.mjs` -> **8/8 PASSED**
-- **Updater 校验测试**: `scripts/test-updater-feed.mjs` -> **4/4 PASSED**
-- **UserData 迁移测试**: `scripts/test-user-data-migration.mjs` -> **4/4 PASSED**
+- **OAuth 回调与协议测试**: `scripts/test-oauth-callback-queue.mjs` + `scripts/test-oauth-protocol.mjs` -> **12/12 PASSED**
+- **Updater 校验测试**: `scripts/test-updater-feed.mjs` -> **5/5 PASSED**
+- **UserData 迁移测试**: `scripts/test-user-data-migration.mjs` -> **6/6 PASSED**
+- **SafeStorage 真实 Electron 集成测试**: `scripts/test-safe-storage-migration.mjs` -> **1/1 PASSED (`secret readable: true`)**
+- **端到端综合门禁验收测试**: `scripts/test-migration-gate-e2e.mjs` -> **4/4 PASSED**
 - **Canvas Bundle 校验测试**: `scripts/test-canvas-bundle.mjs` -> **4/4 PASSED**
 
 ---
@@ -155,5 +187,4 @@
 READY_FOR_REPOSITORY_MIGRATION = YES
 ```
 
-所有官方依赖、官方遥测上报已彻底清除，历史用户数据平滑无损迁移方案已验证落地，代码仓库配置及安装包发布源均已指向全新私有仓库 `MdicaL7/WUDI`。
-当前分支具备作为全新独立仓库初始基线的全部条件。
+所有最终审计问题已彻底闭环，跨品牌数据迁移与安全存储经过真实 Electron 运行时验证无损，自动化测试 154/154 全绿，打包与原生构建全部通过。当前分支具备迁移至全新仓库的全部条件。

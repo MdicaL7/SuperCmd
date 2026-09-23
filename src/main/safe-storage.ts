@@ -21,6 +21,8 @@
 import { app, safeStorage } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
+import { execFileSync } from 'child_process';
 
 const VAULT_FILENAME = 'safe-storage.json';
 const ENCRYPTED_PREFIX = 'enc:';
@@ -31,6 +33,56 @@ let decryptedCache: Record<string, string> | null = null;
 // encryption was unavailable). These are passed through writes verbatim
 // so we never destroy a user's secrets we just couldn't open right now.
 let unknownRawCache: Record<string, string> | null = null;
+
+let legacyKeychainPasswordCache: string | null | undefined = undefined;
+
+export function getLegacySuperCmdKeychainPassword(): string | null {
+  if (legacyKeychainPasswordCache !== undefined) {
+    return legacyKeychainPasswordCache;
+  }
+  if (process.platform !== 'darwin') {
+    legacyKeychainPasswordCache = null;
+    return null;
+  }
+  try {
+    const stdout = execFileSync('security', [
+      'find-generic-password',
+      '-s', 'SuperCmd Safe Storage',
+      '-w'
+    ], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 });
+    const pw = stdout.trim();
+    legacyKeychainPasswordCache = pw || null;
+    return legacyKeychainPasswordCache;
+  } catch {
+    legacyKeychainPasswordCache = null;
+    return null;
+  }
+}
+
+export function setLegacySuperCmdKeychainPasswordForTesting(pw: string | null): void {
+  legacyKeychainPasswordCache = pw;
+}
+
+/**
+ * Decrypts Chromium macOS OSCrypt payload using the legacy password.
+ * Format is 'v10' followed by AES-128-CBC ciphertext with IV = 16 spaces.
+ */
+export function decryptLegacyOscryptPayload(buf: Buffer, password: string): string | null {
+  try {
+    if (buf.length < 3) return null;
+    const version = buf.subarray(0, 3).toString('utf8');
+    if (version !== 'v10') return null;
+    const ciphertext = buf.subarray(3);
+    const key = crypto.pbkdf2Sync(password, 'saltysalt', 1003, 16, 'sha1');
+    const iv = Buffer.alloc(16, ' ');
+    const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
+    let decrypted = decipher.update(ciphertext);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch {
+    return null;
+  }
+}
 
 function getVaultPath(): string {
   return path.join(app.getPath('userData'), VAULT_FILENAME);
@@ -48,6 +100,7 @@ function loadVault(): void {
   if (decryptedCache && unknownRawCache) return;
   const decrypted: Record<string, string> = {};
   const unknownRaw: Record<string, string> = {};
+  let needsReEncrypt = false;
   try {
     const raw = fs.readFileSync(getVaultPath(), 'utf-8');
     const parsed = JSON.parse(raw);
@@ -62,9 +115,28 @@ function loadVault(): void {
           }
           try {
             const buf = Buffer.from(value.slice(ENCRYPTED_PREFIX.length), 'base64');
-            decrypted[key] = safeStorage.decryptString(buf);
+            try {
+              decrypted[key] = safeStorage.decryptString(buf);
+            } catch (decryptErr) {
+              // Identity/keychain mismatch: attempt migration with legacy SuperCmd credentials
+              let migrated = false;
+              const legacyPassword = getLegacySuperCmdKeychainPassword();
+              if (legacyPassword) {
+                const legacyDecrypted = decryptLegacyOscryptPayload(buf, legacyPassword);
+                if (legacyDecrypted !== null) {
+                  decrypted[key] = legacyDecrypted;
+                  needsReEncrypt = true;
+                  migrated = true;
+                  console.log(`safe-storage: secret readable: true (migrated key "${key}" from SuperCmd identity)`);
+                }
+              }
+              if (!migrated) {
+                console.warn(`safe-storage: failed to decrypt key "${key}", preserving raw blob:`, decryptErr);
+                unknownRaw[key] = value;
+              }
+            }
           } catch (e) {
-            console.warn(`safe-storage: failed to decrypt key "${key}", preserving raw blob:`, e);
+            console.warn(`safe-storage: failed to parse key "${key}", preserving raw blob:`, e);
             unknownRaw[key] = value;
           }
         } else {
@@ -77,6 +149,9 @@ function loadVault(): void {
   }
   decryptedCache = decrypted;
   unknownRawCache = unknownRaw;
+  if (needsReEncrypt) {
+    persistVault();
+  }
 }
 
 function persistVault(): boolean {

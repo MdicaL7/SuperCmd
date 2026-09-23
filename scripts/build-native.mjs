@@ -15,13 +15,17 @@ function run(cmd) {
 }
 
 function getNodeGypCmd() {
-  const homebrewGyp = '/opt/homebrew/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js';
-  if (existsSync(homebrewGyp)) {
-    return `node "${homebrewGyp}"`;
-  }
   const localGyp = path.resolve('node_modules/.bin/node-gyp');
   if (existsSync(localGyp)) {
     return `"${localGyp}"`;
+  }
+  try {
+    execSync('npx --no-install node-gyp -v', { stdio: 'ignore' });
+    return 'npx --no-install node-gyp';
+  } catch {}
+  const homebrewGyp = '/opt/homebrew/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js';
+  if (existsSync(homebrewGyp)) {
+    return `node "${homebrewGyp}"`;
   }
   return 'npx --no-install node-gyp';
 }

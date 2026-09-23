@@ -25,11 +25,9 @@ This document provides a comprehensive audit of all network endpoints, telemetry
 All remaining endpoints represent standard, user-configured third-party integrations, public open-source registries, or local loopback bridges:
 
 ### A. Raycast Extension Store & GitHub
-- `https://api.github.com/repos/raycast/extensions/contents`
-- `https://api.github.com/repos/raycast/extensions/git/trees/main?recursive=1`
-- `https://raw.githubusercontent.com/raycast/extensions/main`
-- `https://github.com/raycast/extensions`
-  * **Purpose**: Fetches the open Raycast community extensions catalog and icons directly from GitHub without any intermediary proxy.
+- `https://github.com/raycast/extensions.git` (Git sparse checkout): Used to fetch the open Raycast community catalog manifests (`package.json`). Fresh catalog building requires Git; existing users utilize the migrated `extension-catalog.json` cache.
+- `https://api.github.com/repos/raycast/extensions/git/trees/main?recursive=1` & `https://raw.githubusercontent.com/raycast/extensions/main`: Used by `downloadExtensionFromTree` for direct downloading of individual extension files and assets when installing extensions without Git.
+- `https://api.github.com/repos/raycast/extensions/contents`: Used to query extension screenshots on demand.
 
 ### B. AI & LLM Providers
 - `https://api.openai.com/v1` (OpenAI API)
