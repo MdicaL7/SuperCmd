@@ -61,7 +61,7 @@ export interface CommandInfo {
     title?: string;
     data?: Array<{ title?: string; value?: string }>;
   }>;
-  /** SuperCmd deeplink (e.g. `supercmd://extensions/<owner>/<ext>/<cmd>`). Set for extension and script commands. */
+  /** WUDI deeplink (e.g. `wudi://extensions/<owner>/<ext>/<cmd>`). Set for extension and script commands. */
   deeplink?: string;
 }
 

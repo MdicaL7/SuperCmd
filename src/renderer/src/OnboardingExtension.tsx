@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import HotkeyRecorder from './settings/HotkeyRecorder';
 import { useI18n } from './i18n';
-import supercmdLogo from '../../../supercmd.png';
+import wudiLogo from '../../../wudi.png';
 import onboardingIconVideo from '../../../assets/icon.mp4';
 import type { WhisperCppModelStatus, ParakeetModelStatus } from '../types/electron';
 
@@ -673,7 +673,7 @@ const OnboardingExtension: React.FC<OnboardingExtensionProps> = ({
         }
         if (ok) {
           // macOS 13+ does not auto-add apps to Input Monitoring via CGEventTap.
-          // The user must click "+" in System Settings and manually select SuperCmd.
+          // The user must click "+" in System Settings and manually select WUDI.
           setPermissionNotes((prev) => ({
             ...prev,
             [id]: t('onboarding.voice.permissionNotes.inputMonitoring'),
@@ -753,7 +753,7 @@ const OnboardingExtension: React.FC<OnboardingExtensionProps> = ({
                   }}
                 >
                   <span className="inline-flex w-fit px-2.5 py-1 rounded-full border border-white/[0.12] bg-white/[0.06] text-[10px] tracking-[0.14em] uppercase text-white/82">
-                    SuperCmd Setup
+                    WUDI Setup
                   </span>
                   <h2 className="text-white text-[26px] lg:text-[30px] leading-[1.1] font-semibold max-w-xl">
                     {t('onboarding.voice.setupTitle')}
@@ -779,8 +779,8 @@ const OnboardingExtension: React.FC<OnboardingExtensionProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-5 min-h-[460px]">
                 <div className="p-2 flex items-center justify-center">
                   <img
-                    src={supercmdLogo}
-                    alt="SuperCmd logo"
+                    src={wudiLogo}
+                    alt="WUDI logo"
                     className="w-full max-w-[240px] h-auto object-contain drop-shadow-[0_22px_54px_rgba(255,58,98,0.68)]"
                     draggable={false}
                   />
@@ -871,7 +871,7 @@ const OnboardingExtension: React.FC<OnboardingExtensionProps> = ({
                       }}
                       className="settings-checkbox"
                     />
-                    <span className="text-white/86 text-xs font-medium">Start SuperCmd at login</span>
+                    <span className="text-white/86 text-xs font-medium">Start WUDI at login</span>
                   </label>
 
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.05] p-3.5">
@@ -906,11 +906,11 @@ const OnboardingExtension: React.FC<OnboardingExtensionProps> = ({
                 >
                   <p className="text-white text-[20px] leading-tight font-semibold mb-2">Grant Access</p>
                   <p className="text-white/72 text-sm leading-relaxed mb-4">
-                    We now request each permission first, then jump to the exact Privacy & Security page so SuperCmd appears where needed.
+                    We now request each permission first, then jump to the exact Privacy & Security page so WUDI appears where needed.
                   </p>
                   <div className="space-y-2 text-xs text-white/70">
                     <p>1. Click each access row once</p>
-                    <p>2. Enable SuperCmd in System Settings</p>
+                    <p>2. Enable WUDI in System Settings</p>
                     <p>3. Return and continue setup</p>
                   </div>
                 </div>
@@ -989,12 +989,12 @@ const OnboardingExtension: React.FC<OnboardingExtensionProps> = ({
                         </div>
                         {!isDone && isRequested ? (
                           <p className={`${permissionNoteClass} text-amber-100/85`}>
-                            Permission request sent. Enable SuperCmd in System Settings, then return.
+                            Permission request sent. Enable WUDI in System Settings, then return.
                           </p>
                         ) : null}
                         {target.id === 'input-monitoring' ? (
                           <p className={`${permissionNoteClass} text-amber-700 dark:text-amber-100/85`}>
-                            If SuperCmd is not visible here, click + and manually add SuperCmd from the Applications folder.
+                            If WUDI is not visible here, click + and manually add WUDI from the Applications folder.
                           </p>
                         ) : null}
                         {target.id === 'home-folder' ? (

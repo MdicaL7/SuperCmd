@@ -1,16 +1,15 @@
 {
-  "name": "supercmd",
+  "name": "wudi",
   "version": "1.0.26",
-  "description": "SuperCmd \u2014 Productivity supercharged",
-  "author": "Shobhit Bhosure - (https://x.com/nullbytes00)",
-  "homepage": "https://supercmd.sh",
+  "description": "WUDI — Local-first productivity toolbox",
+  "author": "MdicaL7",
   "main": "dist/main/main.js",
-  "repository": "https://github.com/SuperCmdLabs/SuperCmd",
+  "repository": "https://github.com/MdicaL7/SuperCmd",
   "scripts": {
     "dev": "npm run build:main && concurrently \"npm run watch:main\" \"npm run dev:renderer\" \"npm run start:electron\"",
     "watch:main": "tsc -p tsconfig.main.json --watch",
     "dev:renderer": "vite",
-    "start:electron": "wait-on dist/main/main.js && cross-env NODE_ENV=development SUPERCMD_OPEN_DEVTOOLS_ON_STARTUP=1 electron .",
+    "start:electron": "wait-on dist/main/main.js && cross-env NODE_ENV=development WUDI_OPEN_DEVTOOLS_ON_STARTUP=1 electron .",
     "build": "npm run build:main && npm run build:renderer && npm run build:native",
     "build:main": "tsc -p tsconfig.main.json && cp src/main/emoji-data.json dist/main/emoji-data.json",
     "build:renderer": "vite build",
@@ -43,7 +42,6 @@
     "wait-on": "^7.2.0"
   },
   "dependencies": {
-    "@aptabase/electron": "^0.3.1",
     "@esbuild/darwin-arm64": "0.19.12",
     "@esbuild/darwin-x64": "0.19.12",
     "@phosphor-icons/react": "^2.1.10",
@@ -60,17 +58,26 @@
     "transliteration": "^2.6.1"
   },
   "build": {
-    "appId": "com.supercmd.app",
-    "productName": "SuperCmd",
+    "appId": "com.mdical7.wudi",
+    "productName": "WUDI",
     "publish": [
       {
         "provider": "github",
-        "owner": "SuperCmdLabs",
+        "owner": "MdicaL7",
         "repo": "SuperCmd",
         "releaseType": "release"
       }
     ],
-    "icon": "supercmd.icns",
+    "protocols": [
+      {
+        "name": "WUDI",
+        "schemes": [
+          "wudi",
+          "supercmd"
+        ]
+      }
+    ],
+    "icon": "wudi.icns",
     "asarUnpack": [
       "dist/native/**",
       "dist/main/window-manager-worker.js",
@@ -88,12 +95,28 @@
     ],
     "extraResources": [
       {
+        "from": "assets/wudi",
+        "to": "assets/wudi"
+      },
+      {
+        "from": "wudi.png",
+        "to": "wudi.png"
+      },
+      {
+        "from": "wudi.icns",
+        "to": "wudi.icns"
+      },
+      {
         "from": "supercmd.svg",
         "to": "supercmd.svg"
       },
       {
         "from": "supercmd.png",
         "to": "supercmd.png"
+      },
+      {
+        "from": "canvas-app/excalidraw-bundle.tgz",
+        "to": "canvas-app/excalidraw-bundle.tgz"
       }
     ],
     "directories": {
@@ -101,7 +124,7 @@
     },
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "supercmd.icns",
+      "icon": "wudi.icns",
       "target": [
         {
           "target": "default",
@@ -112,18 +135,14 @@
         }
       ],
       "hardenedRuntime": true,
-      "notarize": {
-        "teamId": "T7HT4U4666"
-      },
-      "identity": "Shobhit Bhosure (T7HT4U4666)",
       "entitlements": "./entitlements.mac.plist",
       "entitlementsInherit": "./entitlements.mac.plist",
       "extendInfo": {
-        "NSCameraUsageDescription": "SuperCmd needs camera access to show and capture camera previews.",
-        "NSCalendarsUsageDescription": "SuperCmd needs calendar access to show your schedule and upcoming events.",
-        "NSCalendarsFullAccessUsageDescription": "SuperCmd needs full calendar access to show your schedule and upcoming events.",
-        "NSMicrophoneUsageDescription": "SuperCmd needs microphone access for Whisper dictation.",
-        "NSSpeechRecognitionUsageDescription": "SuperCmd uses speech recognition for native Whisper dictation."
+        "NSCameraUsageDescription": "WUDI needs camera access to show and capture camera previews.",
+        "NSCalendarsUsageDescription": "WUDI needs calendar access to show your schedule and upcoming events.",
+        "NSCalendarsFullAccessUsageDescription": "WUDI needs full calendar access to show your schedule and upcoming events.",
+        "NSMicrophoneUsageDescription": "WUDI needs microphone access for Whisper dictation.",
+        "NSSpeechRecognitionUsageDescription": "WUDI uses speech recognition for native Whisper dictation."
       }
     },
     "linux": {

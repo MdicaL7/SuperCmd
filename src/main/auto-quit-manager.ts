@@ -23,6 +23,8 @@ const PROTECTED_BUNDLE_IDS = new Set([
   'com.apple.loginwindow',
   'com.apple.dock',
   'com.apple.SystemUIServer',
+  'com.mdical7.wudi',
+  'com.electron.wudi',
   'com.electron.supercmd',
   'com.supercmd.app',
 ]);

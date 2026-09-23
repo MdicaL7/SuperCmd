@@ -933,7 +933,7 @@ const AdvancedTab: React.FC = () => {
                 )}
 
                 <p className="text-[11px] text-[var(--text-muted)] leading-snug">
-                  Hyper Key shortcuts will be shown in SuperCmd with ✦
+                  Hyper Key shortcuts will be shown in WUDI with ✦
                 </p>
               </>
             )}

@@ -8,8 +8,10 @@ export default async function notarizeApp(context) {
 
   const appName = context.packager.appInfo.productFilename;
 
+  const appBundleId = context.packager.appInfo.appId || 'com.mdical7.wudi';
+
   await notarize({
-    appBundleId: 'com.supercmd.app',
+    appBundleId,
     appPath: `${appOutDir}/${appName}.app`,
     appleId: '',
     appleIdPassword: '',

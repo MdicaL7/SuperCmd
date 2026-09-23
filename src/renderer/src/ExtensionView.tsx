@@ -3038,7 +3038,7 @@ const nodeBuiltinStubs: Record<string, any> = {
       const appendParams = (url: string, params?: any) => {
         if (!params || typeof params !== 'object') return url;
         try {
-          const baseOrigin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://local.supercmd';
+          const baseOrigin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://local.wudi';
           const parsed = new URL(url, baseOrigin);
           for (const [key, rawValue] of Object.entries(params)) {
             if (rawValue == null) continue;

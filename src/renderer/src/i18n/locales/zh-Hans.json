@@ -74,7 +74,7 @@
     "auto": "自动"
   },
   "settings": {
-    "title": "SuperCmd 设置",
+    "title": "WUDI 设置",
     "tabs": {
       "general": "通用",
       "ai": "AI",
@@ -86,13 +86,13 @@
       "loading": "正在加载设置...",
       "launcherShortcut": {
         "title": "启动器快捷键",
-        "description": "设置打开和关闭 SuperCmd 的全局快捷键。",
+        "description": "设置打开和关闭 WUDI 的全局快捷键。",
         "updated": "快捷键已更新",
         "failed": "设置失败，快捷键可能已被其他应用占用。"
       },
       "startAtLogin": {
         "title": "登录时启动",
-        "description": "在你登录系统时自动启动 SuperCmd。",
+        "description": "在你登录系统时自动启动 WUDI。",
         "enabled": "已开启",
         "disabled": "已关闭"
       },
@@ -177,7 +177,7 @@
       "about": {
         "title": "关于",
         "description": "版本信息。",
-        "version": "SuperCmd v{version}"
+        "version": "WUDI v{version}"
       },
       "autoQuit": {
         "title": "自动退出",
@@ -216,8 +216,8 @@
       "tabs": {
         "apiKeys": "API 密钥",
         "llm": "大语言模型",
-        "whisper": "SuperCmd 语音输入",
-        "speak": "SuperCmd 语音朗读"
+        "whisper": "WUDI 语音输入",
+        "speak": "WUDI 语音朗读"
       },
       "apiKeys": {
         "openai": {
@@ -348,10 +348,10 @@
       },
       "whisper": {
         "enableWhisper": {
-          "title": "启用 SuperCmd 语音输入",
+          "title": "启用 WUDI 语音输入",
           "description": "开启语音转文字功能。"
         },
-        "title": "SuperCmd 语音输入",
+        "title": "WUDI 语音输入",
         "description": "语音转文字和转录文本清理。",
         "model": {
           "label": "转录模型",
@@ -362,7 +362,7 @@
           "elevenlabsScribeV2": "ElevenLabs Scribe v2"
         },
         "modelOptions": {
-          "whispercpp": "SuperCmd Whisper（默认）",
+          "whispercpp": "WUDI Whisper（默认）",
           "parakeet": "Parakeet v3（最佳且最快，支持 25+ 欧洲语言）",
           "qwen3": "Qwen3 ASR（支持 30+ 种语言，包括中文、日语、韩语、泰语、越南语、印地语）",
           "native": "Apple 语音识别",
@@ -377,7 +377,7 @@
         "recognitionLanguage": "识别语言",
         "vocabulary": {
           "label": "自定义词汇",
-          "placeholder": "Kotlin、Electron、Raycast、SuperCmd…",
+          "placeholder": "Kotlin、Electron、Raycast、WUDI…",
           "hint": "可选。列出不常见的词语、名称或技术术语（用逗号或换行分隔），以引导识别采用正确的拼写。",
           "tokenWarning": "约 {count} 个 token。Whisper 大约只使用前 224 个，超出部分将被忽略。"
         },
@@ -385,7 +385,7 @@
           "parakeet": "通过 Parakeet TDT v3 在设备离线转录，运行于 Apple Neural Engine。首次使用前需要预热模型，请先下载后再开始听写。",
           "qwen3": "通过 Qwen3 ASR 在设备离线转录，支持 30+ 种语言，需要 macOS 15+，首次使用前会预热模型。",
           "whispercpp": "通过 Whisper.cpp 在设备离线转录。请先下载默认 ggml base 模型后再开始听写。",
-          "native": "改用 Apple 语音识别，而不是 SuperCmd Whisper。"
+          "native": "改用 Apple 语音识别，而不是 WUDI Whisper。"
         },
         "hotkeys": {
           "title": "语音输入快捷键",
@@ -428,20 +428,20 @@
             "notDownloaded": "模型尚未下载。请下载约 900 MB 的 int8 模型后再使用 Qwen3 听写。"
           },
           "whispercpp": {
-            "title": "SuperCmd Whisper",
+            "title": "WUDI Whisper",
             "description": "下载一次 ggml base 模型即可启用本地听写。",
-            "ready": "已下载完成，SuperCmd Whisper 已可离线使用。",
-            "downloading": "正在下载 SuperCmd Whisper",
-            "notDownloaded": "模型尚未下载。现在下载后即可使用 SuperCmd Whisper 听写。"
+            "ready": "已下载完成，WUDI Whisper 已可离线使用。",
+            "downloading": "正在下载 WUDI Whisper",
+            "notDownloaded": "模型尚未下载。现在下载后即可使用 WUDI Whisper 听写。"
           }
         }
       },
       "speak": {
         "enableRead": {
-          "title": "启用 SuperCmd 语音朗读",
+          "title": "启用 WUDI 语音朗读",
           "description": "开启文字转语音功能。"
         },
-        "title": "SuperCmd 语音朗读",
+        "title": "WUDI 语音朗读",
         "description": "朗读选中的文字。",
         "provider": {
           "label": "语音提供商",
@@ -488,12 +488,12 @@
             "idle": "播放示例语音",
             "playing": "正在播放示例..."
           },
-          "storageHint": "SuperCmd 将其存储为 {value}。",
+          "storageHint": "WUDI 将其存储为 {value}。",
           "apiKeyWarning": "请在 API 密钥中添加 ElevenLabs API 密钥。"
         },
         "notes": {
           "title": "说明",
-          "whisperDefault": "语音输入默认使用 SuperCmd Whisper 和本地 ggml base 模型。",
+          "whisperDefault": "语音输入默认使用 WUDI Whisper 和本地 ggml base 模型。",
           "speakDefault": "语音朗读默认使用 Edge TTS，支持按语言选择男女声。",
           "englishVoice": "英语语音选项故意限制为美国和英国变体。",
           "elevenlabsVoices": "配置 API 密钥后，ElevenLabs 自定义语音（克隆/生成）将自动显示。"
@@ -501,7 +501,7 @@
       },
       "hotkeyUpdated": "快捷键已更新。",
       "hotkeyRemoved": "快捷键已移除。",
-      "hotkeyDuplicate": "快捷键已被其他 SuperCmd 命令使用。",
+      "hotkeyDuplicate": "快捷键已被其他 WUDI 命令使用。",
       "hotkeyUnavailable": "快捷键不可用。它可能已被 macOS 或其他应用占用。"
     },
     "extensions": {
@@ -509,8 +509,8 @@
       "loading": "正在加载扩展设置...",
       "builtIn": {
         "superCmd": {
-          "title": "SuperCmd",
-          "description": "SuperCmd 内置命令"
+          "title": "WUDI",
+          "description": "WUDI 内置命令"
         },
         "scriptCommands": {
           "title": "脚本命令",
@@ -586,7 +586,7 @@
       "noPreferences": "没有偏好设置",
       "clipboardBlacklist": {
         "title": "忽略的应用",
-        "description": "当以下应用在前台时，复制的内容不会保存到 SuperCmd 的剪贴板历史。",
+        "description": "当以下应用在前台时，复制的内容不会保存到 WUDI 的剪贴板历史。",
         "add": "添加应用",
         "remove": "移除",
         "empty": "未屏蔽任何应用。所有应用的复制都会保存到剪贴板历史。",
@@ -599,7 +599,7 @@
       "loggedIn": "已登录 {name}",
       "uninstall": {
         "title": "卸载 \"{name}\"？",
-        "description": "此扩展及其命令将从 SuperCmd 中移除。",
+        "description": "此扩展及其命令将从 WUDI 中移除。",
         "cancel": "取消",
         "confirm": "卸载",
         "uninstalling": "正在卸载...",
@@ -619,7 +619,7 @@
       },
       "appSearchScope": {
         "title": "应用搜索范围",
-        "description": "SuperCmd 在这些目录中扫描已安装的应用以显示在启动器中。",
+        "description": "WUDI 在这些目录中扫描已安装的应用以显示在启动器中。",
         "add": "添加目录",
         "remove": "移除",
         "empty": "未添加自定义目录。将使用系统默认的应用目录。",
@@ -627,7 +627,7 @@
         "removed": "目录已从搜索范围移除。",
         "duplicate": "目录已在列表中。",
         "failed": "更新搜索范围失败。",
-        "restartHint": "重启 SuperCmd 后目录更改才会生效。"
+        "restartHint": "重启 WUDI 后目录更改才会生效。"
       },
       "emojiPicker": {
         "enabled": "启用表情符号选择器",
@@ -686,7 +686,7 @@
       },
       "menuBarIcon": {
         "title": "菜单栏图标",
-        "description": "在 macOS 菜单栏中显示 SuperCmd 图标。",
+        "description": "在 macOS 菜单栏中显示 WUDI 图标。",
         "label": "显示菜单栏图标"
       },
       "navigationStyle": {
@@ -699,7 +699,7 @@
       },
       "popToRootSearch": {
         "title": "返回根搜索",
-        "description": "重新打开 SuperCmd 时,经过此延迟后返回根搜索;否则保留之前打开的扩展或视图。",
+        "description": "重新打开 WUDI 时,经过此延迟后返回根搜索;否则保留之前打开的扩展或视图。",
         "option": {
           "immediately": "立即",
           "5s": "5 秒后",
@@ -761,7 +761,7 @@
           "noneAdded": "尚未添加浏览器个人资料",
           "profileRowDetail": "历史记录：{historyCount} 个 URL · 书签：{bookmarkCount} · 标签页：{tabCount} 个",
           "profileSupportNote": "个人资料支持目前仅包含 Chromium 浏览器。Safari 和 Firefox 支持将在之后添加。",
-          "enabledProfiles": "已为 SuperCmd 浏览器历史记录启用 {count} 个个人资料。",
+          "enabledProfiles": "已为 WUDI 浏览器历史记录启用 {count} 个个人资料。",
           "defaultProfile": "默认"
         },
         "importedData": {
@@ -798,7 +798,7 @@
         },
         "alphaWarning": {
           "title": "Alpha 版浏览器集成",
-          "description": "浏览器搜索目前需要 SuperCmd 浏览器扩展，并且仅支持基于 Chromium 的浏览器。Firefox 和 Safari 将稍后支持。",
+          "description": "浏览器搜索目前需要 WUDI 浏览器扩展，并且仅支持基于 Chromium 的浏览器。Firefox 和 Safari 将稍后支持。",
           "devMode": "要立即连接浏览器，请打开浏览器的扩展程序页面，启用开发者模式，然后选择“加载已解压的扩展程序”，并选择 browser-extension 文件夹。",
           "temporary": "（这是扩展发布到商店之前的临时步骤。）"
         }
@@ -1165,7 +1165,7 @@
     "previousDisplay": "上一个显示器"
   },
   "onboarding": {
-    "welcome": "欢迎使用 SuperCmd",
+    "welcome": "欢迎使用 WUDI",
     "description": "你的 macOS 生产力启动器",
     "getStarted": "开始使用",
     "skip": "跳过",
@@ -1226,14 +1226,14 @@
         "speechRecognitionTitle": "语音识别",
         "speechRecognitionDescription": "可选。仅当你把 Whisper 切换为 Apple 语音识别兜底方案时需要。",
         "microphoneTitle": "麦克风",
-        "microphoneDescription": "SuperCmd Whisper 听写所必需。"
+        "microphoneDescription": "WUDI Whisper 听写所必需。"
       },
       "permissionNotes": {
-        "blocked": "{target} 权限已被阻止。请在系统设置中启用 SuperCmd 后再回来。",
-        "promptFailed": "无法触发权限弹窗。请打开 系统设置 -> 隐私与安全性，启用 SuperCmd 后再重新请求。",
+        "blocked": "{target} 权限已被阻止。请在系统设置中启用 WUDI 后再回来。",
+        "promptFailed": "无法触发权限弹窗。请打开 系统设置 -> 隐私与安全性，启用 WUDI 后再重新请求。",
         "notShown": "权限弹窗没有出现。先打开一次 Whisper，再回来点一次。",
-        "homeFolder": "出现提示时请选择你的 Home 文件夹；如果需要，再到“文件与文件夹”里启用 SuperCmd。",
-        "inputMonitoring": "在“输入监控”里点击左下角“+”，从 Applications 文件夹手动添加 SuperCmd。"
+        "homeFolder": "出现提示时请选择你的 Home 文件夹；如果需要，再到“文件与文件夹”里启用 WUDI。",
+        "inputMonitoring": "在“输入监控”里点击左下角“+”，从 Applications 文件夹手动添加 WUDI。"
       },
       "dictation": {
         "title": "听写模式",
@@ -1244,9 +1244,9 @@
         "sampleTitle": "消息示例",
         "sampleHint": "按住你的按键，然后读出上面的内容：",
         "placeholder": "听写结果会显示在这里...",
-        "footerHint": "SuperCmd Whisper 默认使用本地 ggml base 模型。你也可以在设置里切换回 Apple 语音识别兜底。",
+        "footerHint": "WUDI Whisper 默认使用本地 ggml base 模型。你也可以在设置里切换回 Apple 语音识别兜底。",
         "models": {
-          "downloadFailed": "模型下载失败。请立即重试，或前往 设置 -> AI -> SuperCmd Whisper 处理。",
+          "downloadFailed": "模型下载失败。请立即重试，或前往 设置 -> AI -> WUDI Whisper 处理。",
           "actions": {
             "downloaded": "已下载",
             "downloading": "下载中...",
@@ -1257,14 +1257,14 @@
             "ready": "下载完成，Parakeet v3 听写已就绪。",
             "downloadingLead": "模型正在下载，请稍候。",
             "downloading": "正在下载 Parakeet v3 CoreML 模型",
-            "notDownloaded": "SuperCmd 会在这一步开始下载 Parakeet v3 模型，确保你首次使用前就已准备好听写。"
+            "notDownloaded": "WUDI 会在这一步开始下载 Parakeet v3 模型，确保你首次使用前就已准备好听写。"
           },
           "whispercpp": {
-            "title": "SuperCmd Whisper",
-            "ready": "下载完成，SuperCmd Whisper 听写已就绪。",
+            "title": "WUDI Whisper",
+            "ready": "下载完成，WUDI Whisper 听写已就绪。",
             "downloadingLead": "模型正在下载，请稍候。",
             "downloading": "正在下载约 300 MB 的 ggml base 模型",
-            "notDownloaded": "SuperCmd 会在这一步开始下载 SuperCmd Whisper 模型，确保你首次使用前就已准备好听写。"
+            "notDownloaded": "WUDI 会在这一步开始下载 WUDI Whisper 模型，确保你首次使用前就已准备好听写。"
           },
           "cloud": {
             "title": "云端转录",
@@ -1284,9 +1284,9 @@
         "sampleText": "语音优先的界面正在迎来新的机会。过去它们常被当成噱头，但新一代工具已经让“开口说”真的比“动手打”更快，转录跟得上，修正更聪明，快捷键也能自然融入现有工作流。"
       },
       "final": {
-        "title": "最后一步：从任何地方启动 SuperCmd",
-        "description": "现在按一次你的全局快捷键，从任何应用里启动 SuperCmd。",
-        "nextStep": "下一步：去 SuperCmd 设置 -> 扩展，为 AI Prompt 和 Memory 配置快捷键，开始在任何地方使用 AI。"
+        "title": "最后一步：从任何地方启动 WUDI",
+        "description": "现在按一次你的全局快捷键，从任何应用里启动 WUDI。",
+        "nextStep": "下一步：去 WUDI 设置 -> 扩展，为 AI Prompt 和 Memory 配置快捷键，开始在任何地方使用 AI。"
       },
       "setupDescription": "我们会一次性完成启动器快捷键、隐私权限和 Whisper 模式配置。",
       "setupSummary": "Whisper 听写与朗读模式练习",
@@ -1299,7 +1299,7 @@
     }
   },
   "whisper": {
-    "title": "SuperCmd 语音输入",
+    "title": "WUDI 语音输入",
     "description": "简单好用的语音转文字",
     "start": "开始说话",
     "stop": "停止说话",
@@ -1315,7 +1315,7 @@
       "idle": "点击开始后即可说话。",
       "apiError": "Whisper API 出错。",
       "nativeFallback": "当前 Whisper 模型为 Apple 语音识别。点击开始即可使用 Apple 兜底方案。",
-      "transcriptionFailedLocal": "SuperCmd Whisper 转录失败。",
+      "transcriptionFailedLocal": "WUDI Whisper 转录失败。",
       "transcriptionFailed": "Whisper 转录失败。",
       "microphonePermissionRequired": "需要麦克风权限。",
       "microphonePermissionCheckFailed": "麦克风权限检查失败。",
@@ -1331,8 +1331,8 @@
     },
     "errors": {
       "typeIntoActiveApp": "无法把内容输入到当前应用。",
-      "enableMicrophonePermission": "请到 系统设置 -> 隐私与安全性 -> 麦克风 中启用 SuperCmd 后再试。",
-      "allowMicrophonePermission": "请允许 SuperCmd Whisper 使用麦克风权限。",
+      "enableMicrophonePermission": "请到 系统设置 -> 隐私与安全性 -> 麦克风 中启用 WUDI 后再试。",
+      "allowMicrophonePermission": "请允许 WUDI Whisper 使用麦克风权限。",
       "microphoneUnavailable": "无法访问麦克风。请检查 系统设置 -> 隐私与安全性 -> 麦克风。",
       "nativeRecognizerStartFailed": "无法启动原生语音识别。",
       "liveTypingRetry": "实时输入没有跟上，请重试。",
@@ -1341,7 +1341,7 @@
     }
   },
   "read": {
-    "title": "SuperCmd 语音朗读",
+    "title": "WUDI 语音朗读",
     "description": "朗读任何选中的文字",
     "start": "开始朗读",
     "stop": "停止朗读",

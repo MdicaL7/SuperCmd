@@ -94,13 +94,13 @@ function toBase64Url(bytes: Uint8Array): string {
 }
 
 export function buildOAuthRedirectUri(redirectMethod: string, extensionName?: string): string {
-  const pkg = extensionName || getOAuthRuntimeDeps().getExtensionContext().extensionName || 'supercmd-extension';
+  const pkg = extensionName || getOAuthRuntimeDeps().getExtensionContext().extensionName || 'wudi-extension';
   switch (redirectMethod) {
     case 'web':
     case 'app':
     case 'appURI':
     default:
-      return `supercmd://oauth/callback?packageName=${encodeURIComponent(pkg)}`;
+      return `wudi://oauth/callback?packageName=${encodeURIComponent(pkg)}`;
   }
 }
 
@@ -147,7 +147,7 @@ export async function buildAuthorizationRequest(params: {
 export function parseOAuthCallbackUrl(rawUrl: string): OAuthCallbackResult | null {
   try {
     const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'supercmd:') return null;
+    if (parsed.protocol !== 'wudi:' && parsed.protocol !== 'supercmd:') return null;
 
     const isOAuthCallback =
       (parsed.hostname === 'oauth' && parsed.pathname === '/callback') ||

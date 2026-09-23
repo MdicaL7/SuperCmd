@@ -327,7 +327,7 @@ export async function exportCanvas(
   const exportData = {
     type: 'excalidraw',
     version: 2,
-    source: 'https://supercmd.sh',
+    source: 'https://github.com/MdicaL7/SuperCmd',
     elements: scene.elements,
     appState: scene.appState,
     files: scene.files,

@@ -187,7 +187,7 @@ const NotesSearchInline: React.FC<NotesSearchInlineProps> = ({ onClose }) => {
         { title: 'Copy as HTML', icon: <Copy size={14} />, execute: async () => { await window.electron.noteCopyToClipboard(selectedNote.id, 'html'); setShowActions(false); } },
         { title: 'Copy as Plain Text', icon: <Copy size={14} />, execute: async () => { await window.electron.noteCopyToClipboard(selectedNote.id, 'plaintext'); setShowActions(false); } },
       ] });
-      a.push({ title: 'Copy Deeplink', icon: <Link2 size={14} />, shortcut: ['⇧', '⌘', 'D'], section: 'copy', execute: async () => { await navigator.clipboard.writeText(`supercmd://notes/${selectedNote.id}`); setShowActions(false); } });
+      a.push({ title: 'Copy Deeplink', icon: <Link2 size={14} />, shortcut: ['⇧', '⌘', 'D'], section: 'copy', execute: async () => { await navigator.clipboard.writeText(`wudi://notes/${selectedNote.id}`); setShowActions(false); } });
       a.push({ title: 'Export...', icon: <Upload size={14} />, shortcut: ['⇧', '⌘', 'E'], section: 'copy', execute: () => handleExport() });
       a.push({ title: selectedNote.pinned ? 'Unpin Note' : 'Pin Note', icon: selectedNote.pinned ? <PinOff size={14} /> : <Pin size={14} />, shortcut: ['⇧', '⌘', 'P'], section: 'manage', execute: () => handleTogglePin() });
     }

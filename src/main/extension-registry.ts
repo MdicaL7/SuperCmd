@@ -25,13 +25,6 @@ import {
   getManifestPlatforms,
   isManifestPlatformCompatible,
 } from './extension-platform';
-import {
-  fetchCatalogFromAPI,
-  getExtensionBundleUrl,
-  getExtensionScreenshotsFromAPI,
-  reportInstall,
-  reportUninstall,
-} from './extension-api';
 import { installDepsWithBun } from './bun-manager';
 
 const execAsync = promisify(exec);
@@ -168,7 +161,7 @@ async function showGitSetupDialog(
     try {
       const result = await dialog.showMessageBox({
         type: 'warning',
-        buttons: ['Quit SuperCmd', 'Later'],
+        buttons: ['Quit WUDI', 'Later'],
         defaultId: 0,
         cancelId: 1,
         noLink: true,
@@ -202,7 +195,7 @@ async function ensureGitInstalledWithBrew(): Promise<void> {
     if (!brewExecutable) {
       await showGitSetupDialog(
         'Git is required to install extensions.',
-        'Homebrew was not found on this Mac.\n\nInstall Homebrew first:\n/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"\n\nThen reopen SuperCmd and try again.'
+        'Homebrew was not found on this Mac.\n\nInstall Homebrew first:\n/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"\n\nThen reopen WUDI and try again.'
       );
       throw new Error('Git setup required: Homebrew is not installed.');
     }
@@ -222,16 +215,16 @@ async function ensureGitInstalledWithBrew(): Promise<void> {
     } catch (error) {
       await showGitSetupDialog(
         'Git is required to install extensions.',
-        `Automatic Git install failed.\n\nRun this command in Terminal:\n"${brewExecutable}" install git\n\nThen quit and reopen SuperCmd and try again.`
+        `Automatic Git install failed.\n\nRun this command in Terminal:\n"${brewExecutable}" install git\n\nThen quit and reopen WUDI and try again.`
       );
       throw new Error('Git setup required: automatic brew install failed.');
     }
     brewGitInstalled = true;
     await showGitSetupDialog(
       'Git has been installed.',
-      'Please quit and reopen SuperCmd, then try installing extensions again.'
+      'Please quit and reopen WUDI, then try installing extensions again.'
     );
-    throw new Error('Git was installed. Restart SuperCmd and retry.');
+    throw new Error('Git was installed. Restart WUDI and retry.');
   })();
 
   try {
@@ -313,7 +306,7 @@ async function runGitCommand(cwd: string, args: string, timeoutMs: number): Prom
   }
 
   await ensureGitInstalledWithBrew();
-  throw new Error('Git setup required. Quit and reopen SuperCmd, then try again.');
+  throw new Error('Git setup required. Quit and reopen WUDI, then try again.');
 }
 
 function hasNodeModules(extPath: string): boolean {
@@ -358,7 +351,7 @@ function shouldUseNetworkFallback(error: any): boolean {
 
 function githubApiHeaders(): Record<string, string> {
   return {
-    'User-Agent': 'SuperCmd',
+    'User-Agent': 'WUDI',
     Accept: 'application/vnd.github+json',
   };
 }
@@ -585,7 +578,7 @@ async function downloadExtensionFromTree(name: string, tmpDir: string): Promise<
         fileUrl,
         {
           headers: {
-            'User-Agent': 'SuperCmd',
+            'User-Agent': 'WUDI',
             Accept: 'application/octet-stream',
           },
         },
@@ -794,41 +787,23 @@ export async function getCatalog(
     }
   }
 
-  // PRIMARY: Fetch from supercmd-backend API
-  try {
-    console.log('Fetching extension catalog from API…');
-    const entries = await fetchCatalogFromAPI();
-
-    const cache: CatalogCache = {
-      entries,
-      fetchedAt: Date.now(),
-      version: CATALOG_VERSION,
-    };
-    catalogCache = cache;
-    saveCatalogToDisk(cache);
-
-    console.log(`Extension catalog (API): ${entries.length} extensions cached.`);
-    return entries;
-  } catch (apiError: any) {
-    console.warn('API catalog fetch failed, trying git fallback:', apiError?.message || apiError);
-  }
-
-  // FALLBACK: git sparse-checkout (requires git on user's machine)
+  // PRIMARY: git sparse-checkout from Raycast extensions GitHub repo
   try {
     const entries = await fetchCatalogFromGitHub();
+    if (entries.length > 0) {
+      const cache: CatalogCache = {
+        entries,
+        fetchedAt: Date.now(),
+        version: CATALOG_VERSION,
+      };
+      catalogCache = cache;
+      saveCatalogToDisk(cache);
 
-    const cache: CatalogCache = {
-      entries,
-      fetchedAt: Date.now(),
-      version: CATALOG_VERSION,
-    };
-    catalogCache = cache;
-    saveCatalogToDisk(cache);
-
-    console.log(`Extension catalog (git fallback): ${entries.length} extensions cached.`);
-    return entries;
+      console.log(`Extension catalog (git): ${entries.length} extensions cached.`);
+      return entries;
+    }
   } catch (gitError: any) {
-    console.warn('Git catalog fallback failed:', gitError?.message || gitError);
+    console.warn('Git catalog fetch failed:', gitError?.message || gitError);
   }
 
   // LAST RESORT: disk cache (even if expired)
@@ -843,26 +818,16 @@ export async function getCatalog(
 }
 
 /**
- * Lazily fetch screenshot URLs for one extension.
- * Tries the backend API first, falls back to GitHub API.
+ * Lazily fetch screenshot URLs for one extension directly from GitHub API.
  */
 export async function getExtensionScreenshotUrls(name: string): Promise<string[]> {
   if (!name) return [];
 
-  // PRIMARY: Try backend API
-  try {
-    const urls = await getExtensionScreenshotsFromAPI(name);
-    if (urls.length > 0) return urls;
-  } catch (apiError: any) {
-    console.warn(`API screenshots fetch failed for ${name}:`, apiError?.message || apiError);
-  }
-
-  // FALLBACK: GitHub API
   try {
     const url = `${GITHUB_API}/extensions/${encodeURIComponent(name)}/metadata`;
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'SuperCmd',
+        'User-Agent': 'WUDI',
         Accept: 'application/vnd.github+json',
       },
     });
@@ -1044,28 +1009,15 @@ export async function installExtension(
     return false;
   }
 
-  // 1. FASTEST: Pre-built bundle from S3 (~2-3s, no npm/bun/esbuild needed).
-  // Callers can opt out (e.g. recovering from an incomplete bundle that
-  // installed `.sc-build/` without source) so we go straight to the source-
-  // download path on retry.
-  if (!options?.skipBundle) {
-    try {
-      const success = await installExtensionFromBundle(name, options?.onProgress);
-      if (success) return true;
-    } catch (bundleError: any) {
-      console.warn(`Bundle install failed for "${name}":`, bundleError?.message || bundleError);
-    }
-  }
-
-  // 2. FALLBACK: Download source + bun/npm + esbuild
+  // 1. PRIMARY: Download source from GitHub tree + bun/npm + esbuild
   try {
-    const success = await installExtensionViaAPI(name);
+    const success = await installExtensionFromGitHub(name);
     if (success) return true;
-  } catch (apiError: any) {
-    console.warn(`API install failed for "${name}":`, apiError?.message || apiError);
+  } catch (error: any) {
+    console.warn(`GitHub source install failed for "${name}":`, error?.message || error);
   }
 
-  // 3. LAST RESORT: git sparse-checkout
+  // 2. FALLBACK: git sparse-checkout
   try {
     const success = await installExtensionViaGit(name);
     if (success) return true;
@@ -1076,114 +1028,18 @@ export async function installExtension(
   return false;
 }
 
-// ─── Pre-built Bundle Install (Fastest) ─────────────────────────────
-
-/**
- * Download a pre-built bundle from S3 via the backend API.
- * The bundle contains package.json + assets/ + .sc-build/ (esbuild output).
- * No npm, no bun, no esbuild needed. ~2-3s total.
- */
-async function installExtensionFromBundle(
-  name: string,
-  onProgress?: (payload: { message: string; downloadedBytes?: number; totalBytes?: number }) => void
-): Promise<boolean> {
-  const installPath = getInstalledPath(name);
-  const hadExistingInstall = fs.existsSync(installPath);
-  const backupPath = hadExistingInstall
-    ? path.join(getExtensionsDir(), `${name}.backup-${Date.now()}`)
-    : '';
-  const tmpDir = path.join(app.getPath('temp'), `supercmd-bundle-${Date.now()}`);
-
-  try {
-    const t0 = Date.now();
-
-    // Get pre-signed S3 URL from backend
-    const { url } = await getExtensionBundleUrl(name);
-    console.log(`Downloading pre-built bundle for "${name}"…`);
-    onProgress?.({ message: `Downloading ${name}…` });
-
-    fs.mkdirSync(tmpDir, { recursive: true });
-    await downloadAndExtractTarball(url, tmpDir, ({ downloadedBytes, totalBytes }) => {
-      onProgress?.({
-        message: `Downloading ${name}…`,
-        downloadedBytes,
-        totalBytes,
-      });
-    });
-    onProgress?.({ message: `Extracting ${name}…` });
-
-    // Find the extension in the extracted directory
-    const nestedPath = path.join(tmpDir, name);
-    let srcDir = tmpDir;
-    if (fs.existsSync(path.join(nestedPath, 'package.json'))) {
-      srcDir = nestedPath;
-    } else if (!fs.existsSync(path.join(srcDir, 'package.json'))) {
-      // Search subdirs
-      const subdirs = fs.readdirSync(tmpDir, { withFileTypes: true }).filter(d => d.isDirectory());
-      for (const sub of subdirs) {
-        if (fs.existsSync(path.join(tmpDir, sub.name, 'package.json'))) {
-          srcDir = path.join(tmpDir, sub.name);
-          break;
-        }
-      }
-    }
-
-    if (!fs.existsSync(path.join(srcDir, 'package.json'))) {
-      throw new Error('Bundle has no package.json');
-    }
-
-    // Must have .sc-build/ — otherwise it's not a valid pre-built bundle
-    if (!fs.existsSync(path.join(srcDir, '.sc-build'))) {
-      throw new Error('Bundle has no .sc-build/ directory — not a pre-built bundle');
-    }
-
-    // Backup existing
-    if (hadExistingInstall) {
-      fs.renameSync(installPath, backupPath);
-    }
-
-    // Copy to extensions directory
-    fs.cpSync(srcDir, installPath, { recursive: true });
-    invalidateExtensionRunnerCaches();
-
-    // Cleanup backup
-    if (backupPath && fs.existsSync(backupPath)) {
-      fs.rmSync(backupPath, { recursive: true, force: true });
-    }
-
-    // Report install (fire-and-forget)
-    reportInstall(name, getMachineId()).catch(() => {});
-
-    console.log(`Extension "${name}" installed from pre-built bundle in ${Date.now() - t0}ms`);
-    return true;
-  } catch (error) {
-    // Rollback
-    try { fs.rmSync(installPath, { recursive: true, force: true }); } catch {}
-    if (backupPath && fs.existsSync(backupPath)) {
-      try { fs.renameSync(backupPath, installPath); } catch {}
-    }
-    throw error;
-  } finally {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
-    if (backupPath && fs.existsSync(backupPath)) {
-      try { fs.rmSync(backupPath, { recursive: true, force: true }); } catch {}
-    }
-  }
-}
-
-// ─── Source-based Install ───────────────────────────────────────────
+// ─── Source-based Install from GitHub ────────────────────────────────
 
 /**
  * Download source from GitHub raw, install deps with bun/npm, esbuild.
- * Fallback when no pre-built bundle exists.
  */
-async function installExtensionViaAPI(name: string): Promise<boolean> {
+async function installExtensionFromGitHub(name: string): Promise<boolean> {
   const installPath = getInstalledPath(name);
   const hadExistingInstall = fs.existsSync(installPath);
   const backupPath = hadExistingInstall
     ? path.join(getExtensionsDir(), `${name}.backup-${Date.now()}`)
     : '';
-  const tmpDir = path.join(app.getPath('temp'), `supercmd-api-install-${Date.now()}`);
+  const tmpDir = path.join(app.getPath('temp'), `wudi-install-${Date.now()}`);
 
   try {
     const t0 = Date.now();
@@ -1260,12 +1116,9 @@ async function installExtensionViaAPI(name: string): Promise<boolean> {
       fs.rmSync(backupPath, { recursive: true, force: true });
     }
 
-    // Report install to backend (fire-and-forget)
-    reportInstall(name, getMachineId()).catch(() => {});
-
     return true;
   } catch (error) {
-    console.error(`API install failed for "${name}":`, error);
+    console.error(`GitHub install failed for "${name}":`, error);
     // Rollback
     try {
       fs.rmSync(installPath, { recursive: true, force: true });
@@ -1499,40 +1352,6 @@ function extractTarGz(buffer: Buffer, destDir: string): void {
   }
 }
 
-// ─── Machine ID ─────────────────────────────────────────────────────
-
-let _machineId: string | null = null;
-
-/**
- * Get or generate a persistent anonymous machine ID for install tracking.
- * Stored in the user data directory — no PII.
- */
-function getMachineId(): string {
-  if (_machineId) return _machineId;
-
-  const idPath = path.join(app.getPath('userData'), '.machine-id');
-  try {
-    const existing = fs.readFileSync(idPath, 'utf-8').trim();
-    if (existing) {
-      _machineId = existing;
-      return existing;
-    }
-  } catch {}
-
-  // Generate a random UUID
-  const id = `${randomHex(8)}-${randomHex(4)}-${randomHex(4)}-${randomHex(4)}-${randomHex(12)}`;
-  try {
-    fs.writeFileSync(idPath, id);
-  } catch {}
-  _machineId = id;
-  return id;
-}
-
-function randomHex(length: number): string {
-  const bytes = require('crypto').randomBytes(Math.ceil(length / 2));
-  return bytes.toString('hex').slice(0, length);
-}
-
 /**
  * Uninstall a community extension by name.
  */
@@ -1547,9 +1366,6 @@ export async function uninstallExtension(name: string): Promise<boolean> {
     fs.rmSync(installPath, { recursive: true, force: true });
     invalidateExtensionRunnerCaches();
     console.log(`Extension "${name}" uninstalled.`);
-
-    // Report uninstall to backend (fire-and-forget)
-    reportUninstall(name, getMachineId()).catch(() => {});
 
     return true;
   } catch (error) {

@@ -544,12 +544,20 @@ function applyFineTunePreset(presetId: PresetId, target: ManagedWindow, area: Sc
   return next;
 }
 
-function isSuperCmdWindow(win: ManagedWindow | null | undefined): boolean {
+function isWudiWindow(win: ManagedWindow | null | undefined): boolean {
   const appName = normalizeText(win?.application?.name).toLowerCase();
   const appPath = normalizeText((win as any)?.application?.path).toLowerCase();
   const title = normalizeText(win?.title).toLowerCase();
-  return appName.includes('supercmd') || appPath.includes('supercmd') || title.includes('supercmd');
+  return (
+    appName.includes('wudi') ||
+    appName.includes('supercmd') ||
+    appPath.includes('wudi') ||
+    appPath.includes('supercmd') ||
+    title.includes('wudi') ||
+    title.includes('supercmd')
+  );
 }
+const isSuperCmdWindow = isWudiWindow;
 
 function isManageableWindow(win: ManagedWindow | null | undefined): win is ManagedWindow {
   if (!win) return false;

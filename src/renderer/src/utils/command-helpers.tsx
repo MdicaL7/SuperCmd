@@ -15,7 +15,7 @@
 import React from 'react';
 import { Search, Power, Settings, Puzzle, Sparkles, FileText, Mic, Volume2, Brain, TerminalSquare, RefreshCw, LayoutGrid, Lock, Trash2, Store, Globe, PanelTop, Bookmark, Clock, Menu } from 'lucide-react';
 import type { CommandInfo, EdgeTtsVoice } from '../../types/electron';
-import supercmdLogo from '../../../../supercmd.svg';
+import wudiLogo from '../../../../wudi.png';
 import IconCalendar from '../icons/Calendar';
 import IconCamera from '../icons/Camera';
 import IconClipboard from '../icons/Clipboard';
@@ -438,7 +438,7 @@ export function formatShortcutLabel(shortcut: string): string {
 
 export function isSuperCmdAppTitle(title: string): boolean {
   const key = String(title || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-  return key === 'supercmd' || key === 'supercmd';
+  return key === 'wudi' || key === 'supercmd';
 }
 
 export function isSuperCmdSystemCommand(commandId: string): boolean {
@@ -512,7 +512,7 @@ export function buildReadVoiceOptions(
 export function renderSuperCmdLogoIcon(): React.ReactNode {
   return (
     <img
-      src={supercmdLogo}
+      src={wudiLogo}
       alt=""
       className="w-5 h-5 object-contain"
       draggable={false}
@@ -520,8 +520,10 @@ export function renderSuperCmdLogoIcon(): React.ReactNode {
   );
 }
 
+export const renderWudiLogoIcon = renderSuperCmdLogoIcon;
+
 export function getCommandDisplayTitle(command: CommandInfo, t?: Translator): string {
-  if (command.category === 'app' && isSuperCmdAppTitle(command.title)) return 'SuperCmd';
+  if (command.category === 'app' && isSuperCmdAppTitle(command.title)) return 'WUDI';
   if (t) {
     const toolboxTitles: Record<string, string> = {
       'system-screenshot-region': 'screenshot.commands.region',

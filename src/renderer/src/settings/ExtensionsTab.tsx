@@ -25,7 +25,7 @@ import {
   Plus,
   X,
 } from 'lucide-react';
-import supercmdLogo from '../../../../supercmd.svg';
+import wudiLogo from '../../../../wudi.png';
 import HotkeyRecorder from './HotkeyRecorder';
 import type {
   AppSettings,
@@ -1247,7 +1247,7 @@ const ExtensionsTab: React.FC<{
                       {(schema.iconDataUrl || extensionIconFallbackByName.get(schema.extName)) ? (
                         <img src={schema.iconDataUrl || extensionIconFallbackByName.get(schema.extName)} alt="" className="w-4 h-4 rounded-sm object-contain" draggable={false} />
                       ) : schema.extName === SUPERCMD_EXTENSION_NAME ? (
-                        <img src={supercmdLogo} alt="" className="w-4 h-4 object-contain" draggable={false} />
+                        <img src={wudiLogo} alt="" className="w-4 h-4 object-contain" draggable={false} />
                       ) : schema.extName === SYSTEM_SETTINGS_NAME ? (
                         <Settings className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
                       ) : schema.extName === INSTALLED_APPLICATIONS_NAME ? (
@@ -1443,7 +1443,7 @@ const ExtensionsTab: React.FC<{
                   {selectedSchema.iconDataUrl ? (
                     <img src={selectedSchema.iconDataUrl} alt="" className="w-5 h-5 rounded object-contain" draggable={false} />
                   ) : selectedSchema.extName === SUPERCMD_EXTENSION_NAME ? (
-                    <img src={supercmdLogo} alt="" className="w-5 h-5 object-contain" draggable={false} />
+                    <img src={wudiLogo} alt="" className="w-5 h-5 object-contain" draggable={false} />
                   ) : selectedSchema.extName === SYSTEM_SETTINGS_NAME ? (
                     <Settings className="w-5 h-5 text-[var(--text-muted)]" />
                   ) : selectedSchema.extName === INSTALLED_APPLICATIONS_NAME ? (

@@ -74,7 +74,7 @@
     "auto": "自動"
   },
   "settings": {
-    "title": "SuperCmd 設定",
+    "title": "WUDI 設定",
     "tabs": {
       "general": "一般",
       "ai": "AI",
@@ -86,13 +86,13 @@
       "loading": "設定を読み込み中...",
       "launcherShortcut": {
         "title": "ランチャーショートカット",
-        "description": "SuperCmd を開閉するグローバルショートカットを設定します。",
+        "description": "WUDI を開閉するグローバルショートカットを設定します。",
         "updated": "ショートカットを更新しました",
         "failed": "失敗しました。ショートカットが他のアプリで使用されている可能性があります。"
       },
       "startAtLogin": {
         "title": "ログイン時に起動",
-        "description": "ログイン時に SuperCmd を自動的に起動します。",
+        "description": "ログイン時に WUDI を自動的に起動します。",
         "enabled": "有効",
         "disabled": "無効"
       },
@@ -177,7 +177,7 @@
       "about": {
         "title": "情報",
         "description": "バージョン情報。",
-        "version": "SuperCmd v{version}"
+        "version": "WUDI v{version}"
       },
       "autoQuit": {
         "title": "自動終了",
@@ -216,8 +216,8 @@
       "tabs": {
         "apiKeys": "API キー",
         "llm": "LLM",
-        "whisper": "SuperCmd Whisper",
-        "speak": "SuperCmd Read"
+        "whisper": "WUDI Whisper",
+        "speak": "WUDI Read"
       },
       "apiKeys": {
         "openai": {
@@ -348,10 +348,10 @@
       },
       "whisper": {
         "enableWhisper": {
-          "title": "SuperCmd Whisper を有効にする",
+          "title": "WUDI Whisper を有効にする",
           "description": "音声認識機能を切り替えます。"
         },
-        "title": "SuperCmd Whisper",
+        "title": "WUDI Whisper",
         "description": "音声認識と文字起こしのクリーンアップ。",
         "model": {
           "label": "文字起こしモデル",
@@ -362,7 +362,7 @@
           "elevenlabsScribeV2": "ElevenLabs Scribe v2"
         },
         "modelOptions": {
-          "whispercpp": "SuperCmd Whisper（デフォルト）",
+          "whispercpp": "WUDI Whisper（デフォルト）",
           "parakeet": "Parakeet v3（最高かつ最速、25 以上のヨーロッパ言語対応）",
           "qwen3": "Qwen3 ASR（中国語、日本語、韓国語、タイ語、ベトナム語、ヒンディー語を含む 30 以上の言語に対応）",
           "native": "Apple 音声認識",
@@ -377,7 +377,7 @@
         "recognitionLanguage": "認識言語",
         "vocabulary": {
           "label": "カスタム語彙",
-          "placeholder": "Kotlin、Electron、Raycast、SuperCmd…",
+          "placeholder": "Kotlin、Electron、Raycast、WUDI…",
           "hint": "任意。認識を正しい表記に近づけるため、珍しい単語・名前・専門用語をカンマまたは改行で区切って入力します。",
           "tokenWarning": "約 {count} トークン。Whisper は先頭の約 224 トークンしか使用しないため、それを超える単語は無視されます。"
         },
@@ -385,7 +385,7 @@
           "parakeet": "Parakeet TDT v3 によるオフラインのオンデバイス文字起こし。Apple Neural Engine 上で実行されます。初回使用時にモデルのウォームアップが必要です。ディクテーションを使用する前に下からモデルをダウンロードしてください。",
           "qwen3": "Qwen3 ASR によるオフラインのオンデバイス文字起こし。30 以上の言語をサポート、macOS 15 以上が必要、初回使用時にウォームアップします。",
           "whispercpp": "Whisper.cpp によるオフラインのオンデバイス文字起こし。ディクテーションを使用する前に下からデフォルトの ggml base モデルをダウンロードしてください。",
-          "native": "SuperCmd Whisper の代わりに Apple 音声認識を使用します。"
+          "native": "WUDI Whisper の代わりに Apple 音声認識を使用します。"
         },
         "hotkeys": {
           "title": "Whisper ホットキー",
@@ -428,20 +428,20 @@
             "notDownloaded": "モデルはまだダウンロードされていません。Qwen3 ディクテーションを使用するには約 900 MB の int8 モデルをダウンロードしてください。"
           },
           "whispercpp": {
-            "title": "SuperCmd Whisper",
+            "title": "WUDI Whisper",
             "description": "ローカルディクテーションを有効にするため、ggml base モデルを一度ダウンロードしてください。",
-            "ready": "ダウンロード済み。SuperCmd Whisper はオフラインで使用できます。",
-            "downloading": "SuperCmd Whisper をダウンロード中",
-            "notDownloaded": "モデルはまだダウンロードされていません。SuperCmd Whisper ディクテーションを使用するには今すぐダウンロードしてください。"
+            "ready": "ダウンロード済み。WUDI Whisper はオフラインで使用できます。",
+            "downloading": "WUDI Whisper をダウンロード中",
+            "notDownloaded": "モデルはまだダウンロードされていません。WUDI Whisper ディクテーションを使用するには今すぐダウンロードしてください。"
           }
         }
       },
       "speak": {
         "enableRead": {
-          "title": "SuperCmd Read を有効にする",
+          "title": "WUDI Read を有効にする",
           "description": "テキスト読み上げ機能を切り替えます。"
         },
-        "title": "SuperCmd Read",
+        "title": "WUDI Read",
         "description": "選択したテキストを音声で読み上げます。",
         "provider": {
           "label": "音声プロバイダ",
@@ -488,12 +488,12 @@
             "idle": "サンプル音声を再生",
             "playing": "サンプル再生中..."
           },
-          "storageHint": "SuperCmd はこれを {value} として保存します。",
+          "storageHint": "WUDI はこれを {value} として保存します。",
           "apiKeyWarning": "API キーに ElevenLabs API キーを追加してください。"
         },
         "notes": {
           "title": "メモ",
-          "whisperDefault": "Whisper のデフォルトはローカルの ggml base モデルを使用した SuperCmd Whisper です。",
+          "whisperDefault": "Whisper のデフォルトはローカルの ggml base モデルを使用した WUDI Whisper です。",
           "speakDefault": "Speak のデフォルトは言語ごとに男性/女性音声を選択できる Edge TTS です。",
           "englishVoice": "英語の音声オプションは意図的に米国版と英国版に限定されています。",
           "elevenlabsVoices": "ElevenLabs のカスタム音声（クローン/生成）は API キーが設定されると自動的に表示されます。"
@@ -501,7 +501,7 @@
       },
       "hotkeyUpdated": "ホットキーを更新しました。",
       "hotkeyRemoved": "ホットキーを削除しました。",
-      "hotkeyDuplicate": "このホットキーは他の SuperCmd コマンドですでに使用されています。",
+      "hotkeyDuplicate": "このホットキーは他の WUDI コマンドですでに使用されています。",
       "hotkeyUnavailable": "ホットキーを使用できません。macOS または他のアプリで使用されている可能性があります。"
     },
     "extensions": {
@@ -509,8 +509,8 @@
       "loading": "拡張機能設定を読み込み中...",
       "builtIn": {
         "superCmd": {
-          "title": "SuperCmd",
-          "description": "組み込みの SuperCmd コマンド"
+          "title": "WUDI",
+          "description": "組み込みの WUDI コマンド"
         },
         "scriptCommands": {
           "title": "スクリプトコマンド",
@@ -586,7 +586,7 @@
       "noPreferences": "環境設定がありません",
       "clipboardBlacklist": {
         "title": "無視するアプリケーション",
-        "description": "以下のアプリがフロントモストのときにコピーされた内容は、SuperCmd のクリップボード履歴に保存されません。",
+        "description": "以下のアプリがフロントモストのときにコピーされた内容は、WUDI のクリップボード履歴に保存されません。",
         "add": "アプリを追加",
         "remove": "削除",
         "empty": "ブロックされたアプリはありません。すべてのアプリからのコピーがクリップボード履歴に保存されます。",
@@ -599,7 +599,7 @@
       "loggedIn": "{name} にログイン中",
       "uninstall": {
         "title": "「{name}」をアンインストールしますか？",
-        "description": "この拡張機能とそのコマンドが SuperCmd から削除されます。",
+        "description": "この拡張機能とそのコマンドが WUDI から削除されます。",
         "cancel": "キャンセル",
         "confirm": "アンインストール",
         "uninstalling": "アンインストール中...",
@@ -619,7 +619,7 @@
       },
       "appSearchScope": {
         "title": "アプリの検索範囲",
-        "description": "SuperCmd がインストール済みアプリを検索してランチャーに表示するディレクトリ。",
+        "description": "WUDI がインストール済みアプリを検索してランチャーに表示するディレクトリ。",
         "add": "ディレクトリを追加",
         "remove": "削除",
         "empty": "ディレクトリが追加されていません。デフォルトのシステムアプリケーションディレクトリが使用されます。",
@@ -627,7 +627,7 @@
         "removed": "ディレクトリを検索範囲から削除しました。",
         "duplicate": "ディレクトリは既にリストに含まれています。",
         "failed": "検索範囲の更新に失敗しました。",
-        "restartHint": "変更を反映するには SuperCmd を再起動してください。"
+        "restartHint": "変更を反映するには WUDI を再起動してください。"
       },
       "emojiPicker": {
         "enabled": "絵文字ピッカーを有効にする",
@@ -686,7 +686,7 @@
       },
       "menuBarIcon": {
         "title": "メニューバーアイコン",
-        "description": "macOS のメニューバーに SuperCmd のアイコンを表示します。",
+        "description": "macOS のメニューバーに WUDI のアイコンを表示します。",
         "label": "メニューバーアイコンを表示"
       },
       "navigationStyle": {
@@ -699,7 +699,7 @@
       },
       "popToRootSearch": {
         "title": "ルート検索に戻る",
-        "description": "SuperCmd を再度開いたとき、この遅延後にルート検索に戻ります。それ以外は、前に開いていた拡張機能やビューがそのまま表示されます。",
+        "description": "WUDI を再度開いたとき、この遅延後にルート検索に戻ります。それ以外は、前に開いていた拡張機能やビューがそのまま表示されます。",
         "option": {
           "immediately": "すぐに",
           "5s": "5 秒後",
@@ -761,7 +761,7 @@
           "noneAdded": "ブラウザプロファイルはまだ追加されていません",
           "profileRowDetail": "履歴: {historyCount} URL · ブックマーク: {bookmarkCount} · タブ: {tabCount}",
           "profileSupportNote": "プロファイル対応は現在 Chromium ブラウザのみです。Safari と Firefox は今後対応予定です。",
-          "enabledProfiles": "SuperCmd のブラウザ履歴で {count} 個のプロファイルが有効です。",
+          "enabledProfiles": "WUDI のブラウザ履歴で {count} 個のプロファイルが有効です。",
           "defaultProfile": "デフォルト"
         },
         "importedData": {
@@ -798,7 +798,7 @@
         },
         "alphaWarning": {
           "title": "アルファ版のブラウザ連携",
-          "description": "ブラウザ検索は現在 SuperCmd のブラウザ拡張機能が必要で、Chromium ベースのブラウザのみ対応しています。Firefox と Safari は後日対応予定です。",
+          "description": "ブラウザ検索は現在 WUDI のブラウザ拡張機能が必要で、Chromium ベースのブラウザのみ対応しています。Firefox と Safari は後日対応予定です。",
           "devMode": "今すぐブラウザを接続するには、ブラウザの拡張機能ページを開き、デベロッパーモードを有効にして、Load unpacked（パッケージ化されていない拡張機能を読み込む）を選び、browser-extension フォルダを選択してください。",
           "temporary": "（これは拡張機能がストアで公開されるまでの一時的な手順です。）"
         }
@@ -1165,7 +1165,7 @@
     "previousDisplay": "前のディスプレイ"
   },
   "onboarding": {
-    "welcome": "SuperCmd へようこそ",
+    "welcome": "WUDI へようこそ",
     "description": "macOS 向けの生産性ランチャー",
     "getStarted": "はじめる",
     "skip": "スキップ",
@@ -1226,14 +1226,14 @@
         "speechRecognitionTitle": "音声認識",
         "speechRecognitionDescription": "任意。Whisper を Apple 音声認識のフォールバックに切り替える場合のみ必要です。",
         "microphoneTitle": "マイク",
-        "microphoneDescription": "SuperCmd Whisper ディクテーションに必要です。"
+        "microphoneDescription": "WUDI Whisper ディクテーションに必要です。"
       },
       "permissionNotes": {
-        "blocked": "{target} アクセスがブロックされています。システム設定で SuperCmd を有効にしてから戻ってきてください。",
-        "promptFailed": "権限プロンプトを表示できませんでした。システム設定 -> プライバシーとセキュリティを開き、SuperCmd を有効にしてから再度リクエストを押してください。",
+        "blocked": "{target} アクセスがブロックされています。システム設定で WUDI を有効にしてから戻ってきてください。",
+        "promptFailed": "権限プロンプトを表示できませんでした。システム設定 -> プライバシーとセキュリティを開き、WUDI を有効にしてから再度リクエストを押してください。",
         "notShown": "権限プロンプトが表示されませんでした。Whisper を一度開いて、これを再度押してください。",
-        "homeFolder": "プロンプトが表示されたらホームフォルダを選択し、必要に応じてファイルとフォルダの下で SuperCmd を有効にしてください。",
-        "inputMonitoring": "入力監視で左下の「+」をクリックし、アプリケーションフォルダから SuperCmd を追加してください。"
+        "homeFolder": "プロンプトが表示されたらホームフォルダを選択し、必要に応じてファイルとフォルダの下で WUDI を有効にしてください。",
+        "inputMonitoring": "入力監視で左下の「+」をクリックし、アプリケーションフォルダから WUDI を追加してください。"
       },
       "dictation": {
         "title": "ディクテーションモード",
@@ -1244,9 +1244,9 @@
         "sampleTitle": "メッセージサンプル",
         "sampleHint": "キーを押したまま、上のメッセージを読んでください:",
         "placeholder": "ディクテーションされたテキストがここに表示されます...",
-        "footerHint": "SuperCmd Whisper はデフォルトでローカルの ggml base モデルを使用します。Apple 音声認識は設定からフォールバックとして利用できます。",
+        "footerHint": "WUDI Whisper はデフォルトでローカルの ggml base モデルを使用します。Apple 音声認識は設定からフォールバックとして利用できます。",
         "models": {
-          "downloadFailed": "モデルのダウンロードに失敗しました。今すぐ再試行するか、設定 -> AI -> SuperCmd Whisper を使用してください。",
+          "downloadFailed": "モデルのダウンロードに失敗しました。今すぐ再試行するか、設定 -> AI -> WUDI Whisper を使用してください。",
           "actions": {
             "downloaded": "ダウンロード済み",
             "downloading": "ダウンロード中...",
@@ -1257,14 +1257,14 @@
             "ready": "ダウンロードが完了しました。Parakeet v3 ディクテーションの準備が整いました。",
             "downloadingLead": "モデルをダウンロード中、少しお待ちください。",
             "downloading": "Parakeet v3 CoreML モデルをダウンロード中",
-            "notDownloaded": "SuperCmd はこのステップで Parakeet v3 モデルのダウンロードを開始し、初回使用前にディクテーションの準備が整います。"
+            "notDownloaded": "WUDI はこのステップで Parakeet v3 モデルのダウンロードを開始し、初回使用前にディクテーションの準備が整います。"
           },
           "whispercpp": {
-            "title": "SuperCmd Whisper",
-            "ready": "ダウンロードが完了しました。SuperCmd Whisper ディクテーションの準備が整いました。",
+            "title": "WUDI Whisper",
+            "ready": "ダウンロードが完了しました。WUDI Whisper ディクテーションの準備が整いました。",
             "downloadingLead": "モデルをダウンロード中、少しお待ちください。",
             "downloading": "約 300 MB の ggml base モデルをダウンロード中",
-            "notDownloaded": "SuperCmd はこのステップで SuperCmd Whisper モデルのダウンロードを開始し、初回使用前にディクテーションの準備が整います。"
+            "notDownloaded": "WUDI はこのステップで WUDI Whisper モデルのダウンロードを開始し、初回使用前にディクテーションの準備が整います。"
           },
           "cloud": {
             "title": "クラウド文字起こし",
@@ -1284,9 +1284,9 @@
         "sampleText": "ボイスファーストインターフェースは今まさに注目されています。長年ギミックとして見なされてきた後、追いつく文字起こし、スマートな修正、既存のワークフローに違和感なく組み込めるショートカットキーにより、話すほうが入力よりも実際に速くなる新しいツールが登場しています。"
       },
       "final": {
-        "title": "最終ステップ: どこからでも SuperCmd を起動",
-        "description": "今すぐグローバルショートカットを押して、任意のアプリから SuperCmd を起動してください。",
-        "nextStep": "次のステップ: SuperCmd 設定 -> 拡張機能から AI Prompt と Memory のホットキーを設定して、どこでも AI を使い始めましょう。"
+        "title": "最終ステップ: どこからでも WUDI を起動",
+        "description": "今すぐグローバルショートカットを押して、任意のアプリから WUDI を起動してください。",
+        "nextStep": "次のステップ: WUDI 設定 -> 拡張機能から AI Prompt と Memory のホットキーを設定して、どこでも AI を使い始めましょう。"
       },
       "setupDescription": "ランチャーのホットキー、プライバシー権限、Whisper モードを一度に設定します。",
       "setupSummary": "Whisper ディクテーションと Read モードの練習",
@@ -1299,7 +1299,7 @@
     }
   },
   "whisper": {
-    "title": "SuperCmd Whisper",
+    "title": "WUDI Whisper",
     "description": "シンプルに使える音声認識",
     "start": "発話を開始",
     "stop": "発話を停止",
@@ -1315,7 +1315,7 @@
       "idle": "開始を押して話し始めてください。",
       "apiError": "Whisper API エラーが発生しました。",
       "nativeFallback": "Whisper モデルは Apple 音声認識です。開始を押して Apple フォールバックを使用してください。",
-      "transcriptionFailedLocal": "SuperCmd Whisper の文字起こしに失敗しました。",
+      "transcriptionFailedLocal": "WUDI Whisper の文字起こしに失敗しました。",
       "transcriptionFailed": "Whisper の文字起こしに失敗しました。",
       "microphonePermissionRequired": "マイクの権限が必要です。",
       "microphonePermissionCheckFailed": "マイクの権限確認に失敗しました。",
@@ -1331,8 +1331,8 @@
     },
     "errors": {
       "typeIntoActiveApp": "アクティブなアプリに入力できませんでした。",
-      "enableMicrophonePermission": "システム設定 -> プライバシーとセキュリティ -> マイクで SuperCmd を有効にしてから再試行してください。",
-      "allowMicrophonePermission": "SuperCmd Whisper を使用するには、マイクの権限を許可してください。",
+      "enableMicrophonePermission": "システム設定 -> プライバシーとセキュリティ -> マイクで WUDI を有効にしてから再試行してください。",
+      "allowMicrophonePermission": "WUDI Whisper を使用するには、マイクの権限を許可してください。",
       "microphoneUnavailable": "マイクにアクセスできませんでした。システム設定 -> プライバシーとセキュリティ -> マイクを確認してください。",
       "nativeRecognizerStartFailed": "ネイティブ音声認識の開始に失敗しました。",
       "liveTypingRetry": "ライブタイピングが遅れました。もう一度お試しください。",
@@ -1341,7 +1341,7 @@
     }
   },
   "read": {
-    "title": "SuperCmd Read",
+    "title": "WUDI Read",
     "description": "選択されたテキストのテキスト読み上げ",
     "start": "読み上げを開始",
     "stop": "読み上げを停止",

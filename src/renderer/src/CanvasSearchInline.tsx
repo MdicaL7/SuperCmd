@@ -194,7 +194,7 @@ const CanvasSearchInline: React.FC<CanvasSearchInlineProps> = ({ onClose }) => {
           icon: <Copy className="w-3.5 h-3.5" />,
           shortcut: ['⇧', '⌘', 'D'],
           execute: () => {
-            navigator.clipboard.writeText(`supercmd://canvas/${selectedCanvas.id}`);
+            navigator.clipboard.writeText(`wudi://canvas/${selectedCanvas.id}`);
           },
           section: 'actions',
         },
@@ -315,7 +315,7 @@ const CanvasSearchInline: React.FC<CanvasSearchInlineProps> = ({ onClose }) => {
 
       if (e.key === 'd' && e.metaKey && e.shiftKey && selectedCanvas) {
         e.preventDefault();
-        navigator.clipboard.writeText(`supercmd://canvas/${selectedCanvas.id}`);
+        navigator.clipboard.writeText(`wudi://canvas/${selectedCanvas.id}`);
         return;
       }
 

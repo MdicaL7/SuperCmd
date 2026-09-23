@@ -16,7 +16,7 @@ import { ArrowLeft, Plus, ChevronLeft, ChevronRight, History, Trash2, Eraser, Sp
 import { renderSimpleMarkdown } from '../raycast-api/detail-markdown';
 import type { AiMessage, AiConversation } from '../hooks/useAiChat';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
-import supercmdLogo from '../../../../supercmd.png';
+import wudiLogo from '../../../../wudi.png';
 
 interface AiChatViewProps {
   alwaysMountedRunners: React.ReactNode;
@@ -791,7 +791,7 @@ const AiChatView: React.FC<AiChatViewProps> = ({
           {/* Footer (launcher-style: plain text + kbd badges, no pill) */}
           <div className="sc-glass-footer sc-launcher-footer px-4 py-2.5 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <img src={supercmdLogo} alt="SuperCmd" className="w-4 h-4 rounded-sm" />
+              <img src={wudiLogo} alt="WUDI" className="w-4 h-4 rounded-sm" />
               <span className="text-[12px] text-[var(--text-primary)]">Ask AI</span>
             </div>
             <div className="flex items-center gap-3">

@@ -4,10 +4,8 @@
  */
 
 import { PKCEClientCompat } from './oauth-client';
-import { ensureOAuthCallbackBridge, waitForOAuthCallback } from './oauth-bridge';
 import { OAuthServiceCore } from './oauth-service-core';
 import type { OAuthServiceOptions } from './oauth-types';
-import { getOAuthRuntimeDeps } from './runtime-config';
 
 type OAuthFactoryOptions = {
   clientId?: string;
@@ -17,23 +15,11 @@ type OAuthFactoryOptions = {
   onAuthorize?: OAuthServiceOptions['onAuthorize'];
 };
 
-function createServerAuthorize(url: string, providerName: string): () => Promise<string> {
-  return async () => {
-    ensureOAuthCallbackBridge();
-    await getOAuthRuntimeDeps().open(url);
-    const callback = await waitForOAuthCallback('');
-    if (callback.error) {
-      throw new Error(callback.errorDescription || callback.error);
-    }
-    const token = callback.accessToken || callback.code;
-    if (!token) {
-      throw new Error(`${providerName} authorization did not return a valid token.`);
-    }
-    return token;
-  };
-}
-
 export class OAuthService extends OAuthServiceCore {
+  constructor(options: OAuthServiceOptions) {
+    super(options);
+  }
+
   static linear(options: OAuthFactoryOptions): OAuthService {
     const client = new PKCEClientCompat({
       providerId: 'linear',
@@ -44,12 +30,12 @@ export class OAuthService extends OAuthServiceCore {
 
     return new OAuthService({
       client,
-      clientId: options.clientId || '_supercmd_linear',
+      clientId: options.clientId || '',
       scope: options.scope,
-      authorizeUrl: 'https://api.supercmd.sh/auth/linear/authorize',
+      authorizeUrl: 'https://linear.app/oauth/authorize',
       tokenUrl: 'https://api.linear.app/oauth/token',
       personalAccessToken: options.personalAccessToken,
-      authorize: options.authorize || createServerAuthorize('https://api.supercmd.sh/auth/linear/authorize', 'Linear'),
+      authorize: options.authorize,
       onAuthorize: options.onAuthorize,
     });
   }
@@ -64,12 +50,12 @@ export class OAuthService extends OAuthServiceCore {
 
     return new OAuthService({
       client,
-      clientId: options.clientId || '_supercmd_spotify',
+      clientId: options.clientId || '',
       scope: options.scope,
-      authorizeUrl: 'https://api.supercmd.sh/auth/spotify/authorize',
+      authorizeUrl: 'https://accounts.spotify.com/authorize',
       tokenUrl: 'https://accounts.spotify.com/api/token',
       personalAccessToken: options.personalAccessToken,
-      authorize: options.authorize || createServerAuthorize('https://api.supercmd.sh/auth/spotify/authorize', 'Spotify'),
+      authorize: options.authorize,
       onAuthorize: options.onAuthorize,
     });
   }
@@ -78,7 +64,7 @@ export class OAuthService extends OAuthServiceCore {
     const client = new PKCEClientCompat({ providerId: 'github', providerName: 'GitHub', providerIcon: 'github-icon.png', description: 'Connect your GitHub account' });
     return new OAuthService({
       client,
-      clientId: options.clientId || 'supercmd-github',
+      clientId: options.clientId || '',
       scope: options.scope,
       authorizeUrl: 'https://github.com/login/oauth/authorize',
       tokenUrl: 'https://github.com/login/oauth/access_token',
@@ -106,7 +92,7 @@ export class OAuthService extends OAuthServiceCore {
     const client = new PKCEClientCompat({ providerId: 'asana', providerName: 'Asana', providerIcon: 'asana-icon.png', description: 'Connect your Asana account' });
     return new OAuthService({
       client,
-      clientId: options.clientId || 'supercmd-asana',
+      clientId: options.clientId || '',
       scope: options.scope,
       authorizeUrl: 'https://app.asana.com/-/oauth_authorize',
       tokenUrl: 'https://app.asana.com/-/oauth_token',
@@ -120,7 +106,7 @@ export class OAuthService extends OAuthServiceCore {
     const client = new PKCEClientCompat({ providerId: 'slack', providerName: 'Slack', providerIcon: 'slack-icon.png', description: 'Connect your Slack account' });
     return new OAuthService({
       client,
-      clientId: options.clientId || 'supercmd-slack',
+      clientId: options.clientId || '',
       scope: options.scope,
       authorizeUrl: 'https://slack.com/oauth/v2/authorize',
       tokenUrl: 'https://slack.com/api/oauth.v2.access',
@@ -134,12 +120,12 @@ export class OAuthService extends OAuthServiceCore {
     const client = new PKCEClientCompat({ providerId: 'jira', providerName: 'Jira', providerIcon: 'jira-icon.png', description: 'Connect your Jira account' });
     return new OAuthService({
       client,
-      clientId: options.clientId || '_supercmd_jira',
+      clientId: options.clientId || '',
       scope: options.scope,
-      authorizeUrl: 'https://api.supercmd.sh/auth/jira/authorize',
+      authorizeUrl: 'https://auth.atlassian.com/authorize',
       tokenUrl: 'https://auth.atlassian.com/oauth/token',
       personalAccessToken: options.personalAccessToken,
-      authorize: options.authorize || createServerAuthorize('https://api.supercmd.sh/auth/jira/authorize', 'Jira'),
+      authorize: options.authorize,
       onAuthorize: options.onAuthorize,
     });
   }

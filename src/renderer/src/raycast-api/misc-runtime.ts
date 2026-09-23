@@ -215,7 +215,7 @@ export function createDeeplink(
       for (const arg of options.arguments) params.append('arguments', arg);
     }
     const qs = params.toString();
-    return `supercmd://script-commands/${encodeURIComponent(options.command)}${qs ? `?${qs}` : ''}`;
+    return `wudi://script-commands/${encodeURIComponent(options.command)}${qs ? `?${qs}` : ''}`;
   }
 
   const ctx = getExtensionContext();
@@ -233,5 +233,5 @@ export function createDeeplink(
   }
 
   const qs = params.toString();
-  return `supercmd://extensions/${encodeURIComponent(owner)}/${encodeURIComponent(extName)}/${encodeURIComponent(options.command)}${qs ? `?${qs}` : ''}`;
+  return `wudi://extensions/${encodeURIComponent(owner)}/${encodeURIComponent(extName)}/${encodeURIComponent(options.command)}${qs ? `?${qs}` : ''}`;
 }

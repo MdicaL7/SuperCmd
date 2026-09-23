@@ -1,7 +1,7 @@
-# SuperCmd Browser Tabs Extension
+# WUDI Browser Tabs Extension
 
 This is a local development MV3 extension for feeding live tab snapshots into
-SuperCmd.
+WUDI.
 
 Load this `browser-extension/` folder manually as an unpacked extension in the
 matching browser profile. The default profile identity in `background.js` is

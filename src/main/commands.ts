@@ -20,6 +20,7 @@ import { discoverInstalledExtensionCommands } from './extension-runner';
 import { discoverScriptCommands } from './script-command-runner';
 import { getAllQuickLinks, getQuickLinkCommandId, type QuickLink, type QuickLinkIcon } from './quicklink-store';
 import { loadSettings,getSearchApplicationsScope} from './settings-store';
+import { APP_NAME, PROTOCOL_PRIMARY } from '../shared/brand';
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -446,7 +447,7 @@ function canonicalSettingsTitle(title: string, bundleId?: string): string {
 
 function canonicalAppTitle(name: string): string {
   const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '');
-  if (key === 'supercmd' || key === 'supercmd') return 'SuperCmd';
+  if (key === 'supercmd' || key === 'wudi') return APP_NAME;
   return name;
 }
 
@@ -1344,26 +1345,26 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
     },
     {
       id: 'system-open-settings',
-      title: 'SuperCmd Settings',
-      keywords: ['settings', 'preferences', 'config', 'configuration', 'supercmd'],
+      title: `${APP_NAME} Settings`,
+      keywords: ['settings', 'preferences', 'config', 'configuration', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
       id: 'system-open-ai-settings',
-      title: 'SuperCmd AI',
-      keywords: ['ai', 'model', 'provider', 'openai', 'anthropic', 'gemini', 'ollama', 'supercmd'],
+      title: `${APP_NAME} AI`,
+      keywords: ['ai', 'model', 'provider', 'openai', 'anthropic', 'gemini', 'ollama', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
       id: 'system-supercmd-whisper',
-      title: 'SuperCmd Whisper',
-      keywords: ['whisper', 'speech', 'voice', 'dictation', 'transcribe', 'overlay', 'supercmd'],
+      title: `${APP_NAME} Whisper`,
+      keywords: ['whisper', 'speech', 'voice', 'dictation', 'transcribe', 'overlay', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
       id: 'system-supercmd-speak',
-      title: 'SuperCmd Read',
-      keywords: ['speak', 'tts', 'read', 'selected text', 'edge-tts', 'speechify', 'jarvis', 'supercmd'],
+      title: `${APP_NAME} Read`,
+      keywords: ['speak', 'tts', 'read', 'selected text', 'edge-tts', 'speechify', 'jarvis', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
@@ -1656,26 +1657,26 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
     },
     {
       id: 'system-open-extensions-settings',
-      title: 'SuperCmd Extensions',
-      keywords: ['extensions', 'store', 'community', 'hotkey', 'supercmd'],
+      title: `${APP_NAME} Extensions`,
+      keywords: ['extensions', 'store', 'community', 'hotkey', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
       id: 'system-open-extension-store',
       title: 'Extension Store',
-      keywords: ['extension', 'store', 'browse', 'install', 'community', 'marketplace', 'supercmd'],
+      keywords: ['extension', 'store', 'browse', 'install', 'community', 'marketplace', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
       id: 'system-open-onboarding',
-      title: 'SuperCmd Onboarding',
-      keywords: ['welcome', 'onboarding', 'intro', 'setup', 'supercmd'],
+      title: `${APP_NAME} Onboarding`,
+      keywords: ['welcome', 'onboarding', 'intro', 'setup', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
       id: 'system-quit-launcher',
-      title: 'Quit SuperCmd',
-      keywords: ['exit', 'close', 'quit', 'stop'],
+      title: `Quit ${APP_NAME}`,
+      keywords: ['exit', 'close', 'quit', 'stop', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
@@ -1809,7 +1810,7 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
     {
       id: 'system-check-for-updates',
       title: 'Check for Updates',
-      keywords: ['update', 'upgrade', 'version', 'download', 'install', 'supercmd'],
+      keywords: ['update', 'upgrade', 'version', 'download', 'install', 'wudi', 'supercmd'],
       category: 'system',
     },
     {
@@ -1899,8 +1900,8 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
       disabledByDefault: ext.disabledByDefault,
       commandArgumentDefinitions: ext.commandArgumentDefinitions || [],
       deeplink: ext.owner
-        ? `supercmd://extensions/${encodeURIComponent(ext.owner)}/${encodeURIComponent(ext.extName)}/${encodeURIComponent(ext.cmdName)}`
-        : `supercmd://extensions/${encodeURIComponent(ext.extName)}/${encodeURIComponent(ext.cmdName)}`,
+        ? `${PROTOCOL_PRIMARY}://extensions/${encodeURIComponent(ext.owner)}/${encodeURIComponent(ext.extName)}/${encodeURIComponent(ext.cmdName)}`
+        : `${PROTOCOL_PRIMARY}://extensions/${encodeURIComponent(ext.extName)}/${encodeURIComponent(ext.cmdName)}`,
     }));
   } catch (e) {
     console.error('Failed to discover installed extensions:', e);
@@ -1930,7 +1931,7 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
         data: arg.data,
       })),
       deeplink: script.slug
-        ? `supercmd://script-commands/${encodeURIComponent(script.slug)}`
+        ? `${PROTOCOL_PRIMARY}://script-commands/${encodeURIComponent(script.slug)}`
         : undefined,
     }));
   } catch (e) {
@@ -2014,10 +2015,10 @@ async function discoverAndBuildCommands(): Promise<CommandInfo[]> {
   // Assign a universal deeplink to any launcher command that doesn't already
   // have one (extensions + scripts keep their owner/slug-based schemes above).
   // This lets apps, settings, system, and quick-link commands be copied and
-  // re-invoked via `supercmd://commands/<id>`.
+  // re-invoked via `wudi://commands/<id>` (or legacy `supercmd://commands/<id>`).
   for (const cmd of allCommands) {
     if (!cmd.deeplink && cmd.id) {
-      cmd.deeplink = `supercmd://commands/${encodeURIComponent(cmd.id)}`;
+      cmd.deeplink = `${PROTOCOL_PRIMARY}://commands/${encodeURIComponent(cmd.id)}`;
     }
   }
 

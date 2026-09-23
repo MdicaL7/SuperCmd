@@ -79,11 +79,9 @@ import {
   setExtensionPreferenceValue,
   setExtensionPreferences,
 } from './extension-preferences-store';
-import {
-  searchExtensions,
-  getPopularExtensions,
-  getExtensionDetails,
-} from './extension-api';
+import { APP_NAME, APP_ID, LEGACY_APP_ID, PROTOCOL_PRIMARY, PROTOCOL_LEGACY } from '../shared/brand';
+import { resolveMenuBarIconPath, resolveAppIconPath } from './brand-assets';
+import { resolveAppUpdaterFeedConfig } from './updater-config';
 import { getExtensionBundle, buildAllCommands, discoverInstalledExtensionCommands, getInstalledExtensionsSettingsSchema } from './extension-runner';
 import {
   getRendererCrashState,
@@ -224,12 +222,10 @@ import {
 } from './raycast-config-import';
 import { runExecCommand, type ExecCommandOptions } from './exec-command';
 
-import { initialize as initAptabase, trackEvent } from "@aptabase/electron/main";
-
 const electron = require('electron');
 const { app, BrowserWindow, globalShortcut, ipcMain, screen, shell, Menu, Tray, nativeImage, protocol, net, dialog, systemPreferences, clipboard: systemClipboard } = electron;
 try {
-  app.setName('SuperCmd');
+  app.setName(APP_NAME);
 } catch {}
 
 // ─── Native Binary Helpers ──────────────────────────────────────────
@@ -3222,12 +3218,20 @@ function moveWindowToCurrentAerospaceWorkspace(): void {
     aerospaceAvailable = true;
 
     // Find our window(s) by bundle-id
-    const windowsRaw = String(
-      execFileSync('aerospace', ['list-windows', '--all', '--app-bundle-id', 'com.supercmd.app', '--format', '%{window-id} %{workspace}'], {
+    let windowsRaw = String(
+      execFileSync('aerospace', ['list-windows', '--all', '--app-bundle-id', APP_ID, '--format', '%{window-id} %{workspace}'], {
         timeout: 500,
         stdio: ['ignore', 'pipe', 'ignore'],
       }) || ''
     ).trim();
+    if (!windowsRaw) {
+      windowsRaw = String(
+        execFileSync('aerospace', ['list-windows', '--all', '--app-bundle-id', LEGACY_APP_ID, '--format', '%{window-id} %{workspace}'], {
+          timeout: 500,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }) || ''
+      ).trim();
+    }
     if (!windowsRaw) return;
 
     for (const line of windowsRaw.split('\n')) {
@@ -3628,10 +3632,10 @@ async function executeNativeWindowAdjustByAction(
     const hintedAppPath = String(targetHint?.appPath || '').trim();
     const hintedWindowId = Math.trunc(Number(targetHint?.windowId));
     const hintedWorkArea = cloneWorkArea(targetHint?.workArea || null);
-    if (hintedBundleId && hintedBundleId !== 'com.supercmd.app' && hintedBundleId !== 'com.supercmd') {
+    if (hintedBundleId && hintedBundleId !== 'com.supercmd.app' && hintedBundleId !== 'com.supercmd' && hintedBundleId !== APP_ID) {
       args.push('--bundle-id', hintedBundleId);
     }
-    if (hintedAppPath && !hintedAppPath.includes('/SuperCmd.app')) {
+    if (hintedAppPath && !hintedAppPath.includes('/SuperCmd.app') && !hintedAppPath.includes('/WUDI.app')) {
       args.push('--app-path', hintedAppPath);
     }
     if (Number.isFinite(hintedWindowId) && hintedWindowId > 0) {
@@ -7339,7 +7343,8 @@ app.on('open-url', (event: any, url: string) => {
   // Handle canvas deeplinks: supercmd://canvas/<canvas-id>
   try {
     const parsed = new URL(url);
-    if (parsed.protocol === 'supercmd:' && parsed.hostname === 'notes') {
+    const isWudiOrLegacy = parsed.protocol === 'wudi:' || parsed.protocol === 'supercmd:';
+    if (isWudiOrLegacy && parsed.hostname === 'notes') {
       const noteId = parsed.pathname.replace(/^\//, '');
       if (noteId) {
         const note = getNoteById(noteId);
@@ -7350,7 +7355,7 @@ app.on('open-url', (event: any, url: string) => {
         }
       }
     }
-    if (parsed.protocol === 'supercmd:' && parsed.hostname === 'canvas') {
+    if (isWudiOrLegacy && parsed.hostname === 'canvas') {
       const canvasId = parsed.pathname.replace(/^\//, '');
       if (canvasId) {
         pendingCanvasJson = JSON.stringify({ id: canvasId });
@@ -7419,21 +7424,6 @@ function isInvisibleTrayIcon(icon: any): boolean {
 }
 
 function loadAppTrayIcon(): any {
-  const fs = require('fs');
-  // SVG via createFromPath is handled by macOS NSImage natively → resolution-independent.
-  // PNG is the fallback for environments where SVG loading fails.
-  const candidates = [
-    path.join(process.cwd(), 'supercmd.svg'),
-    path.join(app.getAppPath(), 'supercmd.svg'),
-    path.join(process.resourcesPath || '', 'supercmd.svg'),
-    path.join(process.cwd(), 'supercmd.png'),
-    path.join(app.getAppPath(), 'supercmd.png'),
-    path.join(process.resourcesPath || '', 'supercmd.png'),
-    path.join(process.resourcesPath || '', 'supercmd.icns'),
-    path.join(process.resourcesPath || '', 'icon.png'),
-    path.join(process.resourcesPath || '', 'icon.icns'),
-  ].filter(Boolean);
-
   const tryBuildTrayImage = (icon: any): any | null => {
     try {
       if (!icon || icon.isEmpty()) return null;
@@ -7449,10 +7439,10 @@ function loadAppTrayIcon(): any {
     }
   };
 
-  for (const candidate of candidates) {
+  const resolved = resolveMenuBarIconPath();
+  if (resolved) {
     try {
-      if (!candidate || !fs.existsSync(candidate)) continue;
-      const trayImage = tryBuildTrayImage(nativeImage.createFromPath(candidate));
+      const trayImage = tryBuildTrayImage(nativeImage.createFromPath(resolved));
       if (trayImage) return trayImage;
     } catch {}
   }
@@ -7490,18 +7480,18 @@ function ensureAppTray(): void {
     if (process.platform === 'darwin' && iconInvisible) {
       appTray.setTitle('⌘');
     }
-    appTray.setToolTip('SuperCmd');
+    appTray.setToolTip(APP_NAME);
     appTray.setContextMenu(
       Menu.buildFromTemplate([
         {
-          label: 'Open SuperCmd',
+          label: `Open ${APP_NAME}`,
           click: () => {
             void openLauncherFromUserEntry();
           },
         },
         { type: 'separator' },
         {
-          label: 'Quit SuperCmd',
+          label: `Quit ${APP_NAME}`,
           click: () => {
             app.quit();
           },
@@ -7609,7 +7599,7 @@ type ParsedCommandDeepLink =
 function parseCommandDeepLink(url: string): ParsedCommandDeepLink | null {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== 'supercmd:' && parsed.protocol !== 'raycast:') return null;
+    if (parsed.protocol !== 'wudi:' && parsed.protocol !== 'supercmd:' && parsed.protocol !== 'raycast:') return null;
 
     const parts = parsed.pathname.split('/').filter(Boolean).map((v) => decodeURIComponent(v));
 
@@ -7649,10 +7639,8 @@ function parseCommandDeepLink(url: string): ParsedCommandDeepLink | null {
       };
     }
 
-    // `commands/<id>` is a SuperCmd-specific universal launcher — Raycast
-    // doesn't expose its internal command ids, so we only accept the
-    // `supercmd://` scheme here (not the legacy `raycast://` compat scheme).
-    if (parsed.hostname === 'commands' && parsed.protocol === 'supercmd:') {
+    // `commands/<id>` is a universal launcher — supports wudi:// and legacy supercmd://
+    if (parsed.hostname === 'commands' && (parsed.protocol === 'wudi:' || parsed.protocol === 'supercmd:')) {
       const commandId = parts.join('/').trim();
       if (!commandId) return null;
       return {
@@ -7669,13 +7657,12 @@ function parseCommandDeepLink(url: string): ParsedCommandDeepLink | null {
 
 /**
  * True when the URL looks like a command-launch deeplink we can handle
- * (supercmd://extensions/..., supercmd://script-commands/..., or the
- * legacy raycast:// equivalents).
+ * (wudi://..., supercmd://..., or the legacy raycast:// equivalents).
  */
 function isCommandDeepLink(url: string): boolean {
   if (!url) return false;
   if (url.startsWith('raycast://')) return true;
-  if (!url.startsWith('supercmd://')) return false;
+  if (!url.startsWith('wudi://') && !url.startsWith('supercmd://')) return false;
   try {
     const host = new URL(url).hostname;
     return host === 'extensions' || host === 'script-commands' || host === 'commands';
@@ -9080,7 +9067,14 @@ function captureFrontmostAppContext(): void {
     const result = execSync(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, { encoding: 'utf-8' }).trim();
     markSystemEventsPermissionGranted();
     const [name, appPath, bundleId] = result.split('|||');
-    if (bundleId !== 'com.supercmd' && name !== 'SuperCmd' && name !== 'Electron') {
+    if (
+      bundleId !== 'com.supercmd' &&
+      bundleId !== 'com.supercmd.app' &&
+      bundleId !== APP_ID &&
+      name !== 'SuperCmd' &&
+      name !== APP_NAME &&
+      name !== 'Electron'
+    ) {
       lastFrontmostApp = { name, path: appPath, bundleId };
     }
   } catch {
@@ -12522,7 +12516,22 @@ async function installCanvasLib(sender: any): Promise<void> {
       return;
     }
 
-    // Production: download the pre-built bundle from S3
+    // Check if local tarball exists in canvas-app/ or app resources
+    const localTgz = path.join(__dirname, '..', '..', 'canvas-app', 'excalidraw-bundle.tgz');
+    const resourceTgz = path.join(process.resourcesPath || '', 'canvas-app', 'excalidraw-bundle.tgz');
+    const existingTgz = fs.existsSync(localTgz) ? localTgz : (fs.existsSync(resourceTgz) ? resourceTgz : null);
+
+    if (existingTgz) {
+      console.log('[Canvas] Installing bundle from local package:', existingTgz);
+      sender.send('canvas-install-status', { status: 'extracting', progress: 50 });
+      const { execSync } = require('child_process');
+      execSync(`tar -xzf "${existingTgz}" -C "${libDir}"`, { timeout: 30000 });
+      sender.send('canvas-install-status', { status: 'done', progress: 100 });
+      console.log('[Canvas] Excalidraw bundle installed successfully from local package');
+      return;
+    }
+
+    // Fallback: download if present, else throw error
     const bundleUrl = 'https://supercmd-extensions.s3.amazonaws.com/canvas/excalidraw-bundle.tgz';
     const response = await net.fetch(bundleUrl);
 
@@ -12926,72 +12935,6 @@ function updateAppUpdaterStatus(patch: Partial<AppUpdaterStatusSnapshot>): void 
   ) {
     broadcastCommandsUpdated();
   }
-}
-
-function parseGithubRepository(input: string): { owner: string; repo: string } | null {
-  const value = String(input || '').trim();
-  if (!value) return null;
-  const direct = /^([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+)$/.exec(value);
-  if (direct) {
-    return { owner: direct[1], repo: direct[2] };
-  }
-  const match = /github\.com[/:]([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+?)(?:\.git)?(?:\/|$)/i.exec(value);
-  if (!match) return null;
-  return {
-    owner: match[1],
-    repo: match[2],
-  };
-}
-
-function readAppPackageJson(): Record<string, any> | null {
-  const fs = require('fs');
-  const candidatePaths = [
-    path.join(app.getAppPath(), 'package.json'),
-    path.join(process.cwd(), 'package.json'),
-  ];
-
-  for (const filePath of candidatePaths) {
-    try {
-      if (!fs.existsSync(filePath)) continue;
-      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    } catch {}
-  }
-
-  return null;
-}
-
-function resolveAppUpdaterFeedConfig(): Record<string, any> | null {
-  const pkg = readAppPackageJson();
-  if (!pkg || typeof pkg !== 'object') return null;
-
-  const publishFromRoot = Array.isArray((pkg as any).publish) ? (pkg as any).publish[0] : (pkg as any).publish;
-  const publishFromBuild = Array.isArray((pkg as any).build?.publish) ? (pkg as any).build?.publish[0] : (pkg as any).build?.publish;
-  const publish = (publishFromRoot && typeof publishFromRoot === 'object')
-    ? publishFromRoot
-    : (publishFromBuild && typeof publishFromBuild === 'object' ? publishFromBuild : null);
-  if (!publish) return null;
-
-  const provider = String((publish as any).provider || '').trim().toLowerCase();
-  if (provider !== 'github') {
-    return publish;
-  }
-
-  const repositoryRaw = typeof (pkg as any).repository === 'string'
-    ? (pkg as any).repository
-    : String((pkg as any).repository?.url || '');
-  const parsedRepo = parseGithubRepository(repositoryRaw);
-  const owner = String((publish as any).owner || parsedRepo?.owner || '').trim();
-  const repo = String((publish as any).repo || parsedRepo?.repo || '').trim();
-  if (!owner || !repo) {
-    return null;
-  }
-
-  return {
-    ...publish,
-    provider: 'github',
-    owner,
-    repo,
-  };
 }
 
 function ensureAppUpdaterConfigured(): void {
@@ -13591,8 +13534,6 @@ async function rebuildExtensions() {
   }
 }
 
-initAptabase("A-US-7660732429");
-
 // Register custom protocol for serving extension assets (images etc.)
 // Must be called before app.whenReady()
 protocol.registerSchemesAsPrivileged([
@@ -13646,8 +13587,10 @@ app.whenReady().then(async () => {
     openAISettings: () => openSettingsWindow({ tab: 'ai' }),
   });
   fileShelfFeature = registerFileShelf({ loadWindowUrl });
-  trackEvent("app_started");
-  if (!isIsolatedDevProfile) app.setAsDefaultProtocolClient('supercmd');
+  if (!isIsolatedDevProfile) {
+    app.setAsDefaultProtocolClient(PROTOCOL_PRIMARY);
+    app.setAsDefaultProtocolClient(PROTOCOL_LEGACY);
+  }
   scrubInternalClipboardProbe('app startup');
   // Warm the worker so the first window-management action does not race spawn.
   setTimeout(() => { ensureWindowManagerWorker(); }, 0);
@@ -16437,50 +16380,41 @@ return appURL's |path|() as text`,
   ipcMain.handle(
     'search-extensions',
     async (_event: any, query: string, options?: { category?: string; limit?: number; offset?: number }) => {
-      try {
-        return await searchExtensions(query, options);
-      } catch (err: any) {
-        console.warn('search-extensions API failed, falling back to local catalog filter:', err?.message);
-        // Fallback: filter the cached catalog locally
-        const catalog = await getCatalog();
-        const q = (query || '').toLowerCase();
-        const filtered = catalog.filter(
+      const catalog = await getCatalog();
+      const q = (query || '').toLowerCase().trim();
+      let filtered = catalog;
+      if (q) {
+        filtered = filtered.filter(
           (e) =>
             e.name.toLowerCase().includes(q) ||
             e.title.toLowerCase().includes(q) ||
             e.description.toLowerCase().includes(q) ||
             e.author.toLowerCase().includes(q)
         );
-        const limit = options?.limit ?? 50;
-        const offset = options?.offset ?? 0;
-        return { results: filtered.slice(offset, offset + limit), total: filtered.length };
       }
+      if (options?.category) {
+        filtered = filtered.filter((e) => e.categories?.includes(options.category!));
+      }
+      const limit = options?.limit ?? 50;
+      const offset = options?.offset ?? 0;
+      return { results: filtered.slice(offset, offset + limit), total: filtered.length };
     }
   );
 
   ipcMain.handle(
     'get-popular-extensions',
-    async (_event: any, limit?: number) => {
-      try {
-        return await getPopularExtensions(limit);
-      } catch (err: any) {
-        console.warn('get-popular-extensions API failed, returning empty:', err?.message);
-        return [];
-      }
+    async (_event: any, limit = 20) => {
+      const catalog = await getCatalog();
+      const sorted = [...catalog].sort((a, b) => (b.installCount || 0) - (a.installCount || 0));
+      return sorted.slice(0, limit);
     }
   );
 
   ipcMain.handle(
     'get-extension-details',
     async (_event: any, name: string) => {
-      try {
-        return await getExtensionDetails(name);
-      } catch (err: any) {
-        console.warn('get-extension-details API failed, falling back to catalog:', err?.message);
-        // Fallback: find in cached catalog
-        const catalog = await getCatalog();
-        return catalog.find((e) => e.name === name) ?? null;
-      }
+      const catalog = await getCatalog();
+      return catalog.find((e) => e.name === name) ?? null;
     }
   );
 

@@ -3,7 +3,7 @@ import path from 'path';
 
 const localesDir = path.resolve('src/renderer/src/i18n/locales');
 const baseLocale = 'en';
-const strictLocales = new Set((process.env.SUPERCMD_STRICT_LOCALES || 'ko').split(',').map((item) => item.trim()).filter(Boolean));
+const strictLocales = new Set((process.env.WUDI_STRICT_LOCALES || process.env.SUPERCMD_STRICT_LOCALES || 'ko').split(',').map((item) => item.trim()).filter(Boolean));
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);

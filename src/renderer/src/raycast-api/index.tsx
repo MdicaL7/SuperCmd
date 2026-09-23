@@ -2188,7 +2188,7 @@ export async function getFrontmostApplication(): Promise<Application> {
   } catch (e) {
     console.error('getFrontmostApplication error:', e);
   }
-  return { name: 'SuperCmd', path: '', bundleId: 'com.supercmd' };
+  return { name: 'WUDI', path: '', bundleId: 'com.mdical7.wudi' };
 }
 
 export async function getDefaultApplication(path: string): Promise<Application> {

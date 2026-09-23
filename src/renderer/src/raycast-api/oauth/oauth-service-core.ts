@@ -36,26 +36,6 @@ export class OAuthServiceCore {
   }
 
   protected getManagedAuthorizeUrl(): string | null {
-    const providerId = String(this.options.client?.providerId || '').trim().toLowerCase();
-    const providerName = String(this.options.client?.providerName || '').trim().toLowerCase();
-    const configuredAuthorizeUrl = String(this.options.authorizeUrl || '').trim().toLowerCase();
-
-    if (
-      providerId === 'spotify' ||
-      providerName === 'spotify' ||
-      configuredAuthorizeUrl.includes('accounts.spotify.com/authorize')
-    ) {
-      return 'https://api.supercmd.sh/auth/spotify/authorize';
-    }
-
-    if (
-      providerId === 'linear' ||
-      providerName === 'linear' ||
-      configuredAuthorizeUrl.includes('api.linear.app/oauth/authorize')
-    ) {
-      return 'https://api.supercmd.sh/auth/linear/authorize';
-    }
-
     return null;
   }
 
